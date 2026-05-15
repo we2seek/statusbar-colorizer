@@ -134,7 +134,7 @@ describe('extension — activate()', () => {
   });
 
   // ─── Test 2: reassign command is registered and calls run with force: true ───
-  it('registers the projectStatusbarColorizer.reassign command', () => {
+  it('registers the statusbarColorizer.reassign command', () => {
     Object.defineProperty(vscode.workspace, 'workspaceFolders', {
       value: [{ uri: { fsPath: '/some/path' } }],
       configurable: true,
@@ -144,7 +144,7 @@ describe('extension — activate()', () => {
     activate(context);
 
     expect(getRegisterCommand()).toHaveBeenCalledWith(
-      'projectStatusbarColorizer.reassign',
+      'statusbarColorizer.reassign',
       expect.any(Function)
     );
   });
@@ -161,7 +161,7 @@ describe('extension — activate()', () => {
 
     // Extract the registered command handler
     const registerCommandCalls = getRegisterCommand().mock.calls;
-    const reassignCall = registerCommandCalls.find(([name]) => name === 'projectStatusbarColorizer.reassign');
+    const reassignCall = registerCommandCalls.find(([name]) => name === 'statusbarColorizer.reassign');
     expect(reassignCall).toBeDefined();
     const commandHandler = reassignCall![1] as () => Promise<void>;
 
@@ -186,7 +186,7 @@ describe('extension — activate()', () => {
     activate(context);
 
     const registerCommandCalls = getRegisterCommand().mock.calls;
-    const reassignCall = registerCommandCalls.find(([name]) => name === 'projectStatusbarColorizer.reassign');
+    const reassignCall = registerCommandCalls.find(([name]) => name === 'statusbarColorizer.reassign');
     const commandHandler = reassignCall![1] as () => Promise<void>;
 
     mockRun.mockResolvedValue({
@@ -212,7 +212,7 @@ describe('extension — activate()', () => {
     activate(context);
 
     const registerCommandCalls = getRegisterCommand().mock.calls;
-    const reassignCall = registerCommandCalls.find(([name]) => name === 'projectStatusbarColorizer.reassign');
+    const reassignCall = registerCommandCalls.find(([name]) => name === 'statusbarColorizer.reassign');
     const commandHandler = reassignCall![1] as () => Promise<void>;
 
     mockRun.mockResolvedValue({ status: 'skipped', reason: 'already-assigned' });
@@ -232,7 +232,7 @@ describe('extension — activate()', () => {
     activate(context);
 
     const registerCommandCalls = getRegisterCommand().mock.calls;
-    const reassignCall = registerCommandCalls.find(([name]) => name === 'projectStatusbarColorizer.reassign');
+    const reassignCall = registerCommandCalls.find(([name]) => name === 'statusbarColorizer.reassign');
     const commandHandler = reassignCall![1] as () => Promise<void>;
 
     mockRun.mockResolvedValue({ status: 'error', message: 'Something went wrong' });

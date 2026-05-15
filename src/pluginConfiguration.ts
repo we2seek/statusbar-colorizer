@@ -21,7 +21,7 @@ export class VscodePluginConfiguration implements PluginConfiguration {
       getConfig ??
       (() =>
         vscode.workspace
-          .getConfiguration('projectStatusbarColorizer')
+          .getConfiguration('statusbarColorizer')
           .get<string[]>('colorPalette'));
   }
 

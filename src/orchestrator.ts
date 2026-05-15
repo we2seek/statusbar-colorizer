@@ -60,7 +60,7 @@ export class ColorAssignmentOrchestrator {
       // 8. Warn if palette exhausted
       if (result.warning === 'palette-exhausted') {
         this.showWarning(
-          'Project Statusbar Colorizer: All palette colors are occupied by neighboring projects. ' +
+          'Statusbar Colorizer: All palette colors are occupied by neighboring projects. ' +
             `Assigned fallback color: ${result.color}`
         );
       }

@@ -1,6 +1,6 @@
 {
-  "name": "project-statusbar-colorizer",
-  "displayName": "Project Statusbar Colorizer",
+  "name": "statusbar-colorizer",
+  "displayName": "Statusbar Colorizer",
   "description": "Automatically assigns a unique status bar color to each workspace",
   "version": "0.0.1",
   "engines": {
@@ -13,14 +13,14 @@
   "contributes": {
     "commands": [
       {
-        "command": "projectStatusbarColorizer.reassign",
-        "title": "Project Statusbar Colorizer: Reassign Color"
+        "command": "statusbarColorizer.reassign",
+        "title": "Statusbar Colorizer: Reassign Color"
       }
     ],
     "configuration": {
-      "title": "Project Statusbar Colorizer",
+      "title": "Statusbar Colorizer",
       "properties": {
-        "projectStatusbarColorizer.colorPalette": {
+        "statusbarColorizer.colorPalette": {
           "type": "array",
           "items": {
             "type": "string"

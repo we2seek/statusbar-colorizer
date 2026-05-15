@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register the reassign command
   const reassignCommand = vscode.commands.registerCommand(
-    'projectStatusbarColorizer.reassign',
+    'statusbarColorizer.reassign',
     async () => {
       const currentWorkspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
@@ -49,11 +49,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
       if (result.status === 'assigned') {
         vscode.window.showInformationMessage(
-          `Project Statusbar Colorizer: Assigned color ${result.backgroundColor}`
+          `Statusbar Colorizer: Assigned color ${result.backgroundColor}`
         );
       } else if (result.status === 'error') {
         vscode.window.showErrorMessage(
-          `Project Statusbar Colorizer: ${result.message}`
+          `Statusbar Colorizer: ${result.message}`
         );
       }
     }
