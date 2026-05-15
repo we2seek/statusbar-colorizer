@@ -1,0 +1,25 @@
+/node_modules/
+/out/
+/.kiro/
+
+# Keep .vscode/launch.json and .vscode/extensions.json in the repo
+# but ignore personal/local settings
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Extension packages — generated, not committed
+*.vsix
+
+# Test coverage reports
+/coverage/
+
+# macOS
+.DS_Store
+
+# npm logs
+npm-debug.log*
+*.log
+
+# Dev docs (optional — remove this line if you want it in the repo)
+README-DEV.md
