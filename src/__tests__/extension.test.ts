@@ -57,8 +57,13 @@ import { ColorAssignmentOrchestrator } from '../orchestrator';
 // Helper: create a mock ExtensionContext
 // ─────────────────────────────────────────────────────────────────────────────
 function createMockContext(): vscode.ExtensionContext {
+  const store = new Map<string, unknown>();
   return {
     subscriptions: [],
+    globalState: {
+      get: <T>(key: string) => store.get(key) as T | undefined,
+      update: async (key: string, value: unknown) => { store.set(key, value); },
+    },
   } as unknown as vscode.ExtensionContext;
 }
 
@@ -166,7 +171,7 @@ describe('extension — activate()', () => {
 
     await commandHandler();
 
-    expect(mockRun).toHaveBeenCalledWith(workspacePath, { force: true });
+    expect(mockRun).toHaveBeenCalledWith(workspacePath, { force: true, offset: 1 });
   });
 
   // ─── Test 3: showInformationMessage is called when reassign succeeds ───

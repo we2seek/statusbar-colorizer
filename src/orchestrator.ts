@@ -8,6 +8,7 @@ import { PluginConfiguration } from './pluginConfiguration';
 
 export interface OrchestratorOptions {
   force?: boolean;
+  offset?: number;
 }
 
 export type AssignmentResult =
@@ -54,7 +55,7 @@ export class ColorAssignmentOrchestrator {
       const palette = this.config.getColorPalette();
 
       // 7. Assign color
-      const result = this.assigner.assign(workspacePath, occupiedColors, palette);
+      const result = this.assigner.assign(workspacePath, occupiedColors, palette, options?.offset);
 
       // 8. Warn if palette exhausted
       if (result.warning === 'palette-exhausted') {

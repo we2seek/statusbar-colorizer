@@ -39,7 +39,13 @@ export function activate(context: vscode.ExtensionContext): void {
     'projectStatusbarColorizer.reassign',
     async () => {
       const currentWorkspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      const result = await orchestrator.run(currentWorkspacePath, { force: true });
+
+      // Increment offset so each reassign picks a different color
+      const key = `reassignOffset:${currentWorkspacePath ?? ''}`;
+      const offset = (context.globalState.get<number>(key) ?? 0) + 1;
+      await context.globalState.update(key, offset);
+
+      const result = await orchestrator.run(currentWorkspacePath, { force: true, offset });
 
       if (result.status === 'assigned') {
         vscode.window.showInformationMessage(
