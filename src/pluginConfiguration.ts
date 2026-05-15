@@ -3,6 +3,7 @@ import { BUILT_IN_PALETTE } from './palette';
 
 export interface PluginConfiguration {
   getColorPalette(): string[];
+  colorTitleBar(): boolean;
 }
 
 const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
@@ -10,10 +11,12 @@ const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 export class VscodePluginConfiguration implements PluginConfiguration {
   private readonly showError: (msg: string) => void;
   private readonly getConfig: () => string[] | undefined;
+  private readonly getColorTitleBarConfig: () => boolean | undefined;
 
   constructor(
     showError?: (msg: string) => void,
-    getConfig?: () => string[] | undefined
+    getConfig?: () => string[] | undefined,
+    getColorTitleBarConfig?: () => boolean | undefined
   ) {
     this.showError =
       showError ?? ((msg: string) => vscode.window.showErrorMessage(msg));
@@ -23,6 +26,12 @@ export class VscodePluginConfiguration implements PluginConfiguration {
         vscode.workspace
           .getConfiguration('statusbarColorizer')
           .get<string[]>('colorPalette'));
+    this.getColorTitleBarConfig =
+      getColorTitleBarConfig ??
+      (() =>
+        vscode.workspace
+          .getConfiguration('statusbarColorizer')
+          .get<boolean>('colorTitleBar'));
   }
 
   getColorPalette(): string[] {
@@ -42,5 +51,11 @@ export class VscodePluginConfiguration implements PluginConfiguration {
     }
 
     return palette;
+  }
+
+  colorTitleBar(): boolean {
+    const value = this.getColorTitleBarConfig();
+    // Default true when not set
+    return value !== false;
   }
 }

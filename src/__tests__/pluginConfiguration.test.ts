@@ -13,7 +13,6 @@ vi.mock('vscode', () => ({
     getConfiguration: vi.fn(),
   },
 }));
-
 /**
  * Arbitrary that generates a valid HEX color string in the format #RRGGBB.
  */
@@ -124,5 +123,23 @@ describe('VscodePluginConfiguration — unit tests', () => {
     expect(result).toEqual([...BUILT_IN_PALETTE]);
     expect(showError).toHaveBeenCalledTimes(1);
     expect(showError).toHaveBeenCalledWith(invalidColor);
+  });
+});
+
+// Unit tests for colorTitleBar()
+describe('VscodePluginConfiguration.colorTitleBar()', () => {
+  it('returns true when config is not set (undefined) — default on', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => undefined);
+    expect(config.colorTitleBar()).toBe(true);
+  });
+
+  it('returns true when config is explicitly true', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => true);
+    expect(config.colorTitleBar()).toBe(true);
+  });
+
+  it('returns false when config is explicitly false', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => false);
+    expect(config.colorTitleBar()).toBe(false);
   });
 });

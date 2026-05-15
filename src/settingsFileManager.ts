@@ -6,7 +6,7 @@ export type SettingsObject = Record<string, unknown>;
 
 export interface SettingsFileManager {
   read(projectPath: string): Promise<SettingsObject | null>;
-  write(projectPath: string, bg: string, fg: string): Promise<void>;
+  write(projectPath: string, bg: string, fg: string, titleBarBg?: string, titleBarFg?: string): Promise<void>;
   hasStatusBarBackground(settings: SettingsObject | null): boolean;
 }
 
@@ -103,9 +103,9 @@ export class DefaultSettingsFileManager implements SettingsFileManager {
 
   /**
    * Writes `bg` and `fg` into `.vscode/settings.json` inside `projectPath`,
-   * preserving all existing fields.
+   * preserving all existing fields. Optionally also writes title bar colors.
    */
-  async write(projectPath: string, bg: string, fg: string): Promise<void> {
+  async write(projectPath: string, bg: string, fg: string, titleBarBg?: string, titleBarFg?: string): Promise<void> {
     const settingsPath = path.join(projectPath, '.vscode', 'settings.json');
     const vscodePath = path.join(projectPath, '.vscode');
 
@@ -129,6 +129,13 @@ export class DefaultSettingsFileManager implements SettingsFileManager {
 
     colorCustomizations['statusBar.background'] = bg;
     colorCustomizations['statusBar.foreground'] = fg;
+
+    if (titleBarBg !== undefined) {
+      colorCustomizations['titleBar.activeBackground'] = titleBarBg;
+    }
+    if (titleBarFg !== undefined) {
+      colorCustomizations['titleBar.activeForeground'] = titleBarFg;
+    }
 
     settings = { ...settings, 'workbench.colorCustomizations': colorCustomizations };
 

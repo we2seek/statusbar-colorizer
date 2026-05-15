@@ -172,6 +172,29 @@ describe('DefaultSettingsFileManager.write()', () => {
     });
   });
 
+  it('writes titleBar colors when provided', async () => {
+    await withTempDir(async (dir) => {
+      const manager = new DefaultSettingsFileManager();
+      await manager.write(dir, '#2D6A4F', '#FFFFFF', '#2D6A4F', '#FFFFFF');
+
+      const raw = await readSettingsFile(dir);
+      const parsed = JSON.parse(raw);
+      expect(parsed['workbench.colorCustomizations']['titleBar.activeBackground']).toBe('#2D6A4F');
+      expect(parsed['workbench.colorCustomizations']['titleBar.activeForeground']).toBe('#FFFFFF');
+    });
+  });
+
+  it('does not write titleBar keys when titleBar params are omitted', async () => {
+    await withTempDir(async (dir) => {
+      const manager = new DefaultSettingsFileManager();
+      await manager.write(dir, '#2D6A4F', '#FFFFFF');
+
+      const raw = await readSettingsFile(dir);
+      const parsed = JSON.parse(raw);
+      expect(parsed['workbench.colorCustomizations']).not.toHaveProperty('titleBar.activeBackground');
+      expect(parsed['workbench.colorCustomizations']).not.toHaveProperty('titleBar.activeForeground');
+    });
+  });
   it('treats empty settings.json as {} and writes colors', async () => {
     await withTempDir(async (dir) => {
       await writeSettingsFile(dir, '');

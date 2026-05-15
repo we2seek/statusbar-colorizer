@@ -68,8 +68,15 @@ export class ColorAssignmentOrchestrator {
       // 9. Get foreground color
       const foregroundColor = this.contrastChecker.getForeground(result.color);
 
-      // 10. Write settings
-      await this.settingsManager.write(workspacePath, result.color, foregroundColor);
+      // 10. Write settings — include title bar colors if enabled
+      const titleBarEnabled = this.config.colorTitleBar();
+      await this.settingsManager.write(
+        workspacePath,
+        result.color,
+        foregroundColor,
+        titleBarEnabled ? result.color : undefined,
+        titleBarEnabled ? foregroundColor : undefined
+      );
 
       // 11. Return success
       return {

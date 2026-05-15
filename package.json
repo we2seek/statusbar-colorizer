@@ -44,6 +44,11 @@
           },
           "description": "Custom color palette (HEX #RRGGBB). Overrides built-in palette.",
           "default": []
+        },
+        "statusbarColorizer.colorTitleBar": {
+          "type": "boolean",
+          "description": "Also apply the project color to the title bar background. Requires 'window.titleBarStyle': 'custom' on macOS/Linux.",
+          "default": true
         }
       }
     }

@@ -1,69 +1,70 @@
 // 64-color palette generated using golden angle (137.508°) HSL distribution.
 // Hues are evenly spread across the full color wheel with no near-duplicates.
-// Lightness is kept ≤ 38% so white foreground text always passes WCAG 4.5:1 contrast.
+// Lightness alternates 50/55%, saturation 80/85/90% for vibrancy.
+// Foreground text (black or white) is chosen adaptively per WCAG 2.1 4.5:1.
 export const BUILT_IN_PALETTE: readonly string[] = [
-  '#772222', // hue   0 — deep red
-  '#22A047', // hue 138 — emerald
-  '#561386', // hue 275 — deep violet
-  '#96892C', // hue  53 — golden olive
-  '#1B6E7E', // hue 190 — dark teal
-  '#AA1867', // hue 328 — magenta rose
-  '#377722', // hue 105 — forest green
-  '#2722A0', // hue 243 — cobalt blue
-  '#863913', // hue  20 — burnt sienna
-  '#2C966E', // hue 158 — jade
-  '#761B7E', // hue 295 — purple
-  '#8BAA18', // hue  73 — yellow-green
-  '#224C77', // hue 210 — steel blue
-  '#A0223C', // hue 348 — crimson
-  '#13861D', // hue 125 — mid green
-  '#542C96', // hue 263 — indigo
-  '#7E5D1B', // hue  40 — amber brown
-  '#18AAA4', // hue 178 — cyan teal
-  '#772261', // hue 315 — plum
-  '#5BA022', // hue  93 — lime green
-  '#132686', // hue 230 — royal blue
-  '#96392C', // hue   8 — brick red
-  '#1B7E45', // hue 145 — pine green
-  '#8018AA', // hue 283 — vivid violet
-  '#767722', // hue  60 — dark yellow
-  '#227BA0', // hue 198 — cerulean
-  '#861343', // hue 335 — dark rose
-  '#39962C', // hue 113 — grass green
-  '#2C1B7E', // hue 250 — deep blue
-  '#AA5B18', // hue  28 — dark orange
-  '#227762', // hue 165 — sea green
-  '#A0229A', // hue 303 — fuchsia
-  '#5F8613', // hue  80 — olive green
-  '#2C5396', // hue 218 — slate blue
-  '#7E1B23', // hue 355 — dark red
-  '#18AA37', // hue 133 — spring green
-  '#4D2277', // hue 270 — medium violet
-  '#A08622', // hue  48 — mustard
-  '#137C86', // hue 185 — dark cyan
-  '#962C6E', // hue 323 — dark pink
-  '#3B7E1B', // hue 100 — mid forest
-  '#181DAA', // hue 238 — deep cobalt
-  '#773822', // hue  15 — terracotta
-  '#22A067', // hue 153 — medium jade
-  '#731386', // hue 290 — dark purple
-  '#88962C', // hue  68 — khaki
-  '#1B547E', // hue 205 — ocean blue
-  '#AA1842', // hue 343 — deep rose
-  '#227723', // hue 120 — medium green
-  '#4722A0', // hue 258 — blue-violet
-  '#865713', // hue  35 — copper
-  '#2C968A', // hue 173 — dark turquoise
-  '#7E1B6D', // hue 310 — dark magenta
-  '#66AA18', // hue  88 — yellow-green vivid
-  '#223777', // hue 225 — navy
-  '#A02822', // hue   3 — tomato red
-  '#13863A', // hue 140 — dark emerald
-  '#6F2C96', // hue 278 — grape
-  '#7E771B', // hue  55 — dark gold
-  '#188AAA', // hue 193 — sky teal
-  '#77224C', // hue 330 — dark mauve
-  '#3BA022', // hue 108 — bright green
-  '#1E1386', // hue 245 — midnight blue
-  '#96542C', // hue  23 — rust
+  '#E61919', // hue   0 — red
+  '#2BEE64', // hue 138 — emerald
+  '#930DF2', // hue 275 — deep violet
+  '#E8D130', // hue  53 — golden yellow
+  '#13C8EC', // hue 190 — teal
+  '#F42595', // hue 328 — magenta rose
+  '#4CE619', // hue 105 — mid green
+  '#332BEE', // hue 243 — cobalt blue
+  '#F2590D', // hue  20 — orange
+  '#30E8A3', // hue 158 — jade
+  '#DA13EC', // hue 295 — purple
+  '#C8F425', // hue  73 — chartreuse
+  '#197FE6', // hue 210 — steel blue
+  '#EE2B53', // hue 348 — crimson
+  '#0DF220', // hue 125 — mid green
+  '#7630E8', // hue 263 — indigo
+  '#ECA413', // hue  40 — golden
+  '#25F4EB', // hue 178 — cyan
+  '#E619B2', // hue 315 — plum
+  '#84EE2B', // hue  93 — lime green
+  '#0D32F2', // hue 230 — royal blue
+  '#E84830', // hue   8 — red-orange
+  '#13EC6E', // hue 145 — pine green
+  '#B825F4', // hue 283 — vivid violet
+  '#E5E619', // hue  60 — yellow
+  '#2BB4EE', // hue 198 — cerulean
+  '#F20D6C', // hue 335 — dark rose
+  '#47E830', // hue 113 — grass green
+  '#3813EC', // hue 250 — deep blue
+  '#F48425', // hue  28 — amber
+  '#19E6B3', // hue 165 — sea green
+  '#EE2BE5', // hue 303 — fuchsia
+  '#A5F20D', // hue  80 — yellow-green
+  '#3074E8', // hue 218 — slate blue
+  '#EC1324', // hue 355 — dark red
+  '#25F451', // hue 133 — spring green
+  '#8019E6', // hue 270 — violet
+  '#EEC62B', // hue  48 — gold
+  '#0DDEF2', // hue 185 — dark cyan
+  '#E830A2', // hue 323 — dark pink
+  '#5AEC13', // hue 100 — green
+  '#252CF4', // hue 238 — deep cobalt
+  '#E64E19', // hue  15 — orange-red
+  '#2BEE95', // hue 153 — medium jade
+  '#CD0DF2', // hue 290 — dark purple
+  '#D0E830', // hue  68 — yellow-green
+  '#1390EC', // hue 205 — ocean blue
+  '#F42560', // hue 343 — deep rose
+  '#19E61B', // hue 120 — green
+  '#652BEE', // hue 258 — blue-violet
+  '#F2940D', // hue  35 — amber
+  '#30E8D2', // hue 173 — turquoise
+  '#EC13C6', // hue 310 — dark magenta
+  '#93F425', // hue  88 — lime
+  '#194BE6', // hue 225 — navy
+  '#EE342B', // hue   3 — red
+  '#0DF25B', // hue 140 — dark emerald
+  '#A530E8', // hue 278 — grape
+  '#ECDB13', // hue  55 — dark gold
+  '#25C7F4', // hue 193 — sky teal
+  '#E6197E', // hue 330 — dark mauve
+  '#52EE2B', // hue 108 — bright green
+  '#220DF2', // hue 245 — deep blue
+  '#E87730', // hue  23 — dark orange
 ] as const;

@@ -1,8 +1,8 @@
 # Statusbar Colorizer
 
-Automatically gives each workspace a unique status bar color so you always know which project you're looking at — no configuration needed.
+Automatically gives each workspace a unique color so you always know which project you're looking at — no configuration needed.
 
-![VS Code status bar with a distinct color per workspace](https://via.placeholder.com/800x60/772222/FFFFFF?text=my-api+project)
+![VS Code status bar with a distinct color per workspace](https://via.placeholder.com/800x60/F2590D/000000?text=my-api+project)
 <img width="2215" height="1476" alt="image" src="https://github.com/user-attachments/assets/60281c49-5400-4fd6-9410-0d24ec4fccb9" />
 
 ---
@@ -14,7 +14,7 @@ When you open a workspace, the extension:
 1. Hashes the workspace folder path to pick a starting color from a built-in 64-color palette
 2. Scans sibling folders (projects sitting next to yours on disk) to find colors already in use
 3. Picks the first palette color that isn't taken by a neighbor
-4. Writes `statusBar.background` and `statusBar.foreground` into your workspace's `.vscode/settings.json`
+4. Writes the color into your workspace's `.vscode/settings.json` — status bar and optionally the title bar
 5. Picks white or black text automatically based on WCAG 2.1 contrast rules
 
 The result is that projects living in the same parent folder get visually distinct colors, making it easy to tell them apart at a glance.
@@ -29,7 +29,8 @@ The color is assigned once and then left alone — reopening the same workspace 
 - **Neighbor-aware** — avoids colors already used by sibling projects
 - **Deterministic** — same workspace always gets the same base color
 - **WCAG-compliant text** — foreground color is chosen automatically for readable contrast
-- **64-color palette** — colors are spread across the full hue wheel using a golden-angle distribution, so neighbors rarely look similar
+- **64-color vivid palette** — bright, saturated colors spread across the full hue wheel using a golden-angle distribution
+- **Title bar coloring** — optionally colors the title bar to match the status bar (enabled by default)
 - **Reassign command** — if you don't like the assigned color, cycle to the next available one
 
 ---
@@ -46,6 +47,24 @@ If the assigned color clashes with something or you just want a different one:
 2. Run **Statusbar Colorizer: Reassign Color**
 
 Each time you run it, the extension cycles to the next available color in the palette. A notification confirms the new color hex value.
+
+---
+
+## Title bar coloring
+
+By default the extension also colors the title bar to match the status bar, giving the whole window a consistent tint.
+
+> **macOS / Linux note:** title bar coloring requires VS Code's custom title bar. Add this to your user `settings.json` if the title bar isn't changing color:
+> ```json
+> "window.titleBarStyle": "custom"
+> ```
+> On Windows the custom title bar is already the default, so no extra step is needed.
+
+To disable title bar coloring, set this in your user or workspace settings:
+
+```json
+"statusbarColorizer.colorTitleBar": false
+```
 
 ---
 
@@ -72,18 +91,40 @@ Leave the array empty (or don't set it) to use the built-in 64-color palette.
 
 ## What gets written to your workspace
 
-The extension only modifies `.vscode/settings.json` inside your workspace folder. It sets two keys:
+The extension only modifies `.vscode/settings.json` inside your workspace folder. With title bar coloring enabled (the default), it sets four keys:
 
 ```json
 {
   "workbench.colorCustomizations": {
-    "statusBar.background": "#2C966E",
-    "statusBar.foreground": "#FFFFFF"
+    "statusBar.background": "#F2590D",
+    "statusBar.foreground": "#000000",
+    "titleBar.activeBackground": "#F2590D",
+    "titleBar.activeForeground": "#000000"
   }
 }
 ```
 
-Existing settings in that file are preserved. If you want to remove the color, just delete those two keys from the file.
+With `statusbarColorizer.colorTitleBar` set to `false`, only the status bar keys are written:
+
+```json
+{
+  "workbench.colorCustomizations": {
+    "statusBar.background": "#F2590D",
+    "statusBar.foreground": "#000000"
+  }
+}
+```
+
+Existing settings in that file are preserved. If you want to remove the color, just delete the relevant keys from the file.
+
+---
+
+## Settings reference
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `statusbarColorizer.colorPalette` | `string[]` | `[]` | Custom color palette (`#RRGGBB`). Overrides the built-in palette when non-empty. |
+| `statusbarColorizer.colorTitleBar` | `boolean` | `true` | Also apply the project color to the title bar. Requires `window.titleBarStyle: custom` on macOS/Linux. |
 
 ---
 
@@ -99,7 +140,7 @@ If you received a `.vsix` file instead of installing from the Marketplace:
 
 **Via terminal:**
 ```bash
-code --install-extension statusbar-colorizer-0.0.1.vsix
+code --install-extension statusbar-colorizer-0.0.2.vsix
 ```
 
 **Via UI:**
