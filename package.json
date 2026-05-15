@@ -3,7 +3,7 @@
   "publisher": "we2seek",
   "displayName": "Statusbar Colorizer",
   "description": "Automatically assigns a unique status bar color to each workspace",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "categories": [
     "Other"
