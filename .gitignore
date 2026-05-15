@@ -20,6 +20,3 @@
 # npm logs
 npm-debug.log*
 *.log
-
-# Dev docs (optional — remove this line if you want it in the repo)
-README-DEV.md
