@@ -3,7 +3,7 @@
   "publisher": "we2seek",
   "displayName": "Statusbar Colorizer",
   "description": "Automatically assigns a unique status bar color to each workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "categories": [
     "Other"
@@ -45,10 +45,15 @@
           "description": "Custom color palette (HEX #RRGGBB). Overrides built-in palette.",
           "default": []
         },
+        "statusbarColorizer.colorStatusBar": {
+          "type": "boolean",
+          "description": "Apply the project color to the status bar background.",
+          "default": true
+        },
         "statusbarColorizer.colorTitleBar": {
           "type": "boolean",
           "description": "Also apply the project color to the title bar background. Requires 'window.titleBarStyle': 'custom' on macOS/Linux.",
-          "default": true
+          "default": false
         }
       }
     }

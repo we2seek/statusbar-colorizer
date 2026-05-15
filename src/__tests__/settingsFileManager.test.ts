@@ -172,6 +172,19 @@ describe('DefaultSettingsFileManager.write()', () => {
     });
   });
 
+  it('does not write statusBar keys when statusBar params are omitted', async () => {
+    await withTempDir(async (dir) => {
+      const manager = new DefaultSettingsFileManager();
+      await manager.write(dir, undefined, undefined, '#2D6A4F', '#FFFFFF');
+
+      const raw = await readSettingsFile(dir);
+      const parsed = JSON.parse(raw);
+      expect(parsed['workbench.colorCustomizations']).not.toHaveProperty('statusBar.background');
+      expect(parsed['workbench.colorCustomizations']).not.toHaveProperty('statusBar.foreground');
+      expect(parsed['workbench.colorCustomizations']['titleBar.activeBackground']).toBe('#2D6A4F');
+    });
+  });
+
   it('writes titleBar colors when provided', async () => {
     await withTempDir(async (dir) => {
       const manager = new DefaultSettingsFileManager();

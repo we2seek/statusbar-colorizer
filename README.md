@@ -14,7 +14,7 @@ When you open a workspace, the extension:
 1. Hashes the workspace folder path to pick a starting color from a built-in 64-color palette
 2. Scans sibling folders (projects sitting next to yours on disk) to find colors already in use
 3. Picks the first palette color that isn't taken by a neighbor
-4. Writes the color into your workspace's `.vscode/settings.json` — status bar and optionally the title bar
+4. Writes the color into your workspace's `.vscode/settings.json` — status bar and/or title bar depending on your settings
 5. Picks white or black text automatically based on WCAG 2.1 contrast rules
 
 The result is that projects living in the same parent folder get visually distinct colors, making it easy to tell them apart at a glance.
@@ -30,7 +30,8 @@ The color is assigned once and then left alone — reopening the same workspace 
 - **Deterministic** — same workspace always gets the same base color
 - **WCAG-compliant text** — foreground color is chosen automatically for readable contrast
 - **64-color vivid palette** — bright, saturated colors spread across the full hue wheel using a golden-angle distribution
-- **Title bar coloring** — optionally colors the title bar to match the status bar (enabled by default)
+- **Status bar coloring** — enabled by default, can be turned off
+- **Title bar coloring** — opt-in, colors the title bar to match the status bar
 - **Reassign command** — if you don't like the assigned color, cycle to the next available one
 
 ---
@@ -52,18 +53,26 @@ Each time you run it, the extension cycles to the next available color in the pa
 
 ## Title bar coloring
 
-By default the extension also colors the title bar to match the status bar, giving the whole window a consistent tint.
+Title bar coloring is off by default. To enable it, add this to your user or workspace settings:
 
-> **macOS / Linux note:** title bar coloring requires VS Code's custom title bar. Add this to your user `settings.json` if the title bar isn't changing color:
+```json
+"statusbarColorizer.colorTitleBar": true
+```
+
+> **macOS / Linux note:** title bar coloring requires VS Code's custom title bar. Add this to your user `settings.json` if the title bar isn't changing color after enabling:
 > ```json
 > "window.titleBarStyle": "custom"
 > ```
 > On Windows the custom title bar is already the default, so no extra step is needed.
 
-To disable title bar coloring, set this in your user or workspace settings:
+---
+
+## Disabling status bar coloring
+
+If you only want the title bar colored and not the status bar, you can turn off status bar coloring:
 
 ```json
-"statusbarColorizer.colorTitleBar": false
+"statusbarColorizer.colorStatusBar": false
 ```
 
 ---
@@ -91,7 +100,20 @@ Leave the array empty (or don't set it) to use the built-in 64-color palette.
 
 ## What gets written to your workspace
 
-The extension only modifies `.vscode/settings.json` inside your workspace folder. With title bar coloring enabled (the default), it sets four keys:
+The extension only modifies `.vscode/settings.json` inside your workspace folder. The keys written depend on your settings.
+
+Default (status bar only):
+
+```json
+{
+  "workbench.colorCustomizations": {
+    "statusBar.background": "#F2590D",
+    "statusBar.foreground": "#000000"
+  }
+}
+```
+
+With `colorTitleBar: true`:
 
 ```json
 {
@@ -100,17 +122,6 @@ The extension only modifies `.vscode/settings.json` inside your workspace folder
     "statusBar.foreground": "#000000",
     "titleBar.activeBackground": "#F2590D",
     "titleBar.activeForeground": "#000000"
-  }
-}
-```
-
-With `statusbarColorizer.colorTitleBar` set to `false`, only the status bar keys are written:
-
-```json
-{
-  "workbench.colorCustomizations": {
-    "statusBar.background": "#F2590D",
-    "statusBar.foreground": "#000000"
   }
 }
 ```
@@ -124,7 +135,8 @@ Existing settings in that file are preserved. If you want to remove the color, j
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `statusbarColorizer.colorPalette` | `string[]` | `[]` | Custom color palette (`#RRGGBB`). Overrides the built-in palette when non-empty. |
-| `statusbarColorizer.colorTitleBar` | `boolean` | `true` | Also apply the project color to the title bar. Requires `window.titleBarStyle: custom` on macOS/Linux. |
+| `statusbarColorizer.colorStatusBar` | `boolean` | `true` | Apply the project color to the status bar background. |
+| `statusbarColorizer.colorTitleBar` | `boolean` | `false` | Apply the project color to the title bar background. Requires `window.titleBarStyle: custom` on macOS/Linux. |
 
 ---
 

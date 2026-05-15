@@ -128,18 +128,36 @@ describe('VscodePluginConfiguration — unit tests', () => {
 
 // Unit tests for colorTitleBar()
 describe('VscodePluginConfiguration.colorTitleBar()', () => {
-  it('returns true when config is not set (undefined) — default on', () => {
-    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => undefined);
-    expect(config.colorTitleBar()).toBe(true);
+  it('returns false when config is not set (undefined) — default off', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => undefined, () => undefined);
+    expect(config.colorTitleBar()).toBe(false);
   });
 
   it('returns true when config is explicitly true', () => {
-    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => true);
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => undefined, () => true);
     expect(config.colorTitleBar()).toBe(true);
   });
 
   it('returns false when config is explicitly false', () => {
-    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => false);
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => undefined, () => false);
     expect(config.colorTitleBar()).toBe(false);
+  });
+});
+
+// Unit tests for colorStatusBar()
+describe('VscodePluginConfiguration.colorStatusBar()', () => {
+  it('returns true when config is not set (undefined) — default on', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => undefined);
+    expect(config.colorStatusBar()).toBe(true);
+  });
+
+  it('returns true when config is explicitly true', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => true);
+    expect(config.colorStatusBar()).toBe(true);
+  });
+
+  it('returns false when config is explicitly false', () => {
+    const config = new VscodePluginConfiguration(vi.fn(), () => undefined, () => false);
+    expect(config.colorStatusBar()).toBe(false);
   });
 });

@@ -50,7 +50,8 @@ function buildOrchestrator(overrides?: {
 
   const config: PluginConfiguration = {
     getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
-    colorTitleBar: vi.fn().mockReturnValue(true),
+    colorStatusBar: vi.fn().mockReturnValue(true),
+    colorTitleBar: vi.fn().mockReturnValue(false),
     ...overrides?.config,
   };
 
@@ -215,6 +216,7 @@ describe('ColorAssignmentOrchestrator — unit tests', () => {
       },
       config: {
         getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
         colorTitleBar: vi.fn().mockReturnValue(true),
       },
     });
@@ -239,11 +241,62 @@ describe('ColorAssignmentOrchestrator — unit tests', () => {
       },
       config: {
         getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
         colorTitleBar: vi.fn().mockReturnValue(false),
       },
     });
 
     await orchestrator.run('/some/project');
     expect(writeMock).toHaveBeenCalledWith('/some/project', '#2D6A4F', '#FFFFFF', undefined, undefined);
+  });
+
+  it('omits statusBar colors from write when colorStatusBar is false', async () => {
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+    const { orchestrator } = buildOrchestrator({
+      assigner: { assign: vi.fn().mockReturnValue({ color: '#2D6A4F' }) },
+      contrastChecker: {
+        getForeground: vi.fn().mockReturnValue('#FFFFFF'),
+        getLuminance: vi.fn().mockReturnValue(0.1),
+        getContrastRatio: vi.fn().mockReturnValue(10),
+      },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+      },
+      config: {
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(false),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+      },
+    });
+
+    await orchestrator.run('/some/project');
+    expect(writeMock).toHaveBeenCalledWith('/some/project', undefined, undefined, undefined, undefined);
+  });
+
+  it('passes both statusBar and titleBar colors when both are enabled', async () => {
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+    const { orchestrator } = buildOrchestrator({
+      assigner: { assign: vi.fn().mockReturnValue({ color: '#2D6A4F' }) },
+      contrastChecker: {
+        getForeground: vi.fn().mockReturnValue('#FFFFFF'),
+        getLuminance: vi.fn().mockReturnValue(0.1),
+        getContrastRatio: vi.fn().mockReturnValue(10),
+      },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+      },
+      config: {
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(true),
+      },
+    });
+
+    await orchestrator.run('/some/project');
+    expect(writeMock).toHaveBeenCalledWith('/some/project', '#2D6A4F', '#FFFFFF', '#2D6A4F', '#FFFFFF');
   });
 });
