@@ -29,7 +29,7 @@ The color is assigned once and then left alone — reopening the same workspace 
 - **Neighbor-aware** — avoids colors already used by sibling projects
 - **Deterministic** — same workspace always gets the same base color
 - **WCAG-compliant text** — foreground color is chosen automatically for readable contrast
-- **64-color vivid palette** — bright, saturated colors spread across the full hue wheel using a golden-angle distribution
+- **64-color muted palette** — dimmed, dusty colors spread across the full hue wheel using a golden-angle distribution
 - **Status bar coloring** — enabled by default, can be turned off
 - **Title bar coloring** — opt-in, colors the title bar to match the status bar
 - **Reassign command** — if you don't like the assigned color, cycle to the next available one

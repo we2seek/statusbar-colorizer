@@ -262,7 +262,7 @@ The `.vsix` file is attached automatically and available for download on the rel
 
 ## Extending the Color Palette
 
-The palette is defined as a static array in `src/palette.ts`. To regenerate it with a different size, use this script (golden angle HSL distribution — hues are maximally spread, lightness alternates 50/55% with saturation 80–90% for vibrancy; foreground text is chosen adaptively so all colors pass WCAG 4.5:1):
+The palette is defined as a static array in `src/palette.ts`. To regenerate it with a different size, use this script (golden angle HSL distribution — hues are maximally spread, lightness alternates 58/60% with saturation 33/36/39% for a dimmed, dusty feel; foreground text is chosen adaptively so all colors pass WCAG 4.5:1):
 
 ```bash
 node -e "
@@ -283,8 +283,8 @@ const COUNT = 64; // change this to 32, 128, etc.
 const colors = [];
 for (let i = 0; i < COUNT; i++) {
   const hue = (i * goldenAngle) % 360;
-  const lightness = i % 2 === 0 ? 50 : 55;
-  const saturation = 80 + (i % 3) * 5;
+  const lightness = i % 2 === 0 ? 58 : 60;
+  const saturation = 33 + (i % 3) * 3;
   colors.push({ hex: hslToHex(hue, saturation, lightness), hue: Math.round(hue) });
 }
 colors.forEach(c => console.log(c.hex + ' // hue ' + c.hue));
