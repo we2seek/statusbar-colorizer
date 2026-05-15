@@ -223,11 +223,21 @@ git push
 
 ### Step 4 — Create the GitHub Release
 
+**Option A — using `gh` CLI:**
+
 ```bash
 gh release create v0.0.2 statusbar-colorizer-0.0.2.vsix \
   --title "v0.0.2" \
   --notes "Describe what changed in this release"
 ```
+
+**Option B — GitHub web UI (no extra tools needed):**
+
+1. Go to `https://github.com/we2seek/statusbar-colorizer/releases/new`
+2. Enter the tag name: `v0.0.2`
+3. Fill in the title and release notes
+4. Drag and drop the `.vsix` file into the attachments area
+5. Click **Publish release**
 
 The `.vsix` file is attached automatically and available for download on the releases page.
 
