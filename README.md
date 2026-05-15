@@ -3,6 +3,7 @@
 Automatically gives each workspace a unique status bar color so you always know which project you're looking at — no configuration needed.
 
 ![VS Code status bar with a distinct color per workspace](https://via.placeholder.com/800x60/772222/FFFFFF?text=my-api+project)
+<img width="2215" height="1476" alt="image" src="https://github.com/user-attachments/assets/60281c49-5400-4fd6-9410-0d24ec4fccb9" />
 
 ---
 
