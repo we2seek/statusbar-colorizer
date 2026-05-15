@@ -39,7 +39,8 @@
         "statusbarColorizer.colorPalette": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "format": "color-hex"
           },
           "description": "Custom color palette (HEX #RRGGBB). Overrides built-in palette.",
           "default": []
