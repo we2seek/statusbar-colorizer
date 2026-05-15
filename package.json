@@ -1,5 +1,6 @@
 {
   "name": "statusbar-colorizer",
+  "publisher": "we2seek",
   "displayName": "Statusbar Colorizer",
   "description": "Automatically assigns a unique status bar color to each workspace",
   "version": "0.0.1",
