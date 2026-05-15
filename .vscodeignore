@@ -1,0 +1,13 @@
+.vscode/**
+.kiro/**
+src/**
+node_modules/**
+out/**/*.js.map
+.gitignore
+.gitkeep
+tsconfig.json
+vitest.config.ts
+package-lock.json
+README-DEV.md
+**/*.test.ts
+**/__tests__/**
