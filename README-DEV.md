@@ -184,62 +184,78 @@ vsce publish major   # 0.0.1 → 1.0.0
 
 Releases live at: **https://github.com/we2seek/statusbar-colorizer/releases**
 
-### Step 1 — Bump the version in `package.json`
+This is the full flow from committing code changes to publishing a GitHub release.
 
-Edit the `version` field manually:
+### Step 1 — Commit your changes
 
-```json
-"version": "0.0.2"
-```
-
-Or use npm to bump it automatically:
+Stage only the files you changed, then commit with a descriptive message:
 
 ```bash
-npm version patch   # 0.0.1 → 0.0.2
-npm version minor   # 0.0.1 → 0.1.0
-npm version major   # 0.0.1 → 1.0.0
+git add src/some-file.ts src/__tests__/some-file.test.ts
+git commit -m "feat: describe what you changed"
 ```
 
-`npm version` also creates a git commit and tag automatically.
+### Step 2 — Bump the version
 
-### Step 2 — Compile and package
+Run this **after** committing — `npm version` requires a clean working tree:
 
 ```bash
-npm run compile
+npm version patch   # 0.1.3 → 0.1.4
+npm version minor   # 0.1.3 → 0.2.0
+npm version major   # 0.1.3 → 1.0.0
+```
+
+This automatically:
+- Updates `version` in `package.json` and `package-lock.json`
+- Creates a git commit with the new version number
+- Creates a git tag (e.g. `v0.1.4`)
+
+### Step 3 — Build the .vsix package
+
+```bash
 npm run package
 ```
 
-This produces a file like `statusbar-colorizer-0.0.2.vsix`.
+This produces a file like `statusbar-colorizer-0.1.4.vsix`.
 
-### Step 3 — Commit and push (if you bumped manually)
-
-Skip this if you used `npm version` — it already made the commit.
+### Step 4 — Push commits and tag
 
 ```bash
-git add package.json package-lock.json
-git commit -m "chore: bump version to 0.0.2"
-git push
+git push origin main --follow-tags
 ```
 
-### Step 4 — Create the GitHub Release
+`--follow-tags` pushes the version tag along with the commits in one go.
 
-**Option A — using `gh` CLI:**
+### Step 5 — Create the GitHub release
+
+Make sure `.env` exists in the project root with your GitHub token:
+
+```
+GITHUB_TOKEN=ghp_yourtoken
+```
+
+Then run the release script:
 
 ```bash
-gh release create v0.0.2 statusbar-colorizer-0.0.2.vsix \
-  --title "v0.0.2" \
-  --notes "Describe what changed in this release"
+./release.sh
 ```
 
-**Option B — GitHub web UI (no extra tools needed):**
+It will prompt you for:
+- **Tag** — defaults to the version from `package.json`, just hit Enter
+- **VSIX file** — defaults to the matching filename, just hit Enter
+- **Release description** — free text describing what changed
 
-1. Go to `https://github.com/we2seek/statusbar-colorizer/releases/new`
-2. Enter the tag name: `v0.0.2`
-3. Fill in the title and release notes
-4. Drag and drop the `.vsix` file into the attachments area
-5. Click **Publish release**
+Confirm the summary and the release is created with the `.vsix` attached.
 
-The `.vsix` file is attached automatically and available for download on the releases page.
+#### One-time setup — GitHub token
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens
+2. Generate a new token with **`repo`** scope
+3. Create `.env` in the project root (it is gitignored):
+
+```
+GITHUB_TOKEN=ghp_yourtoken
+```
 
 ---
 
@@ -254,7 +270,9 @@ The `.vsix` file is attached automatically and available for download on the rel
 | Run tests | `npm test` |
 | Package as `.vsix` | `npm run package` |
 | Install locally | `code --install-extension *.vsix` |
-| Create GitHub release | `gh release create v0.0.2 *.vsix --title "v0.0.2" --notes "..."` |
+| Bump version + tag | `npm version patch` |
+| Push with tag | `git push origin main --follow-tags` |
+| Create GitHub release | `./release.sh` |
 | Login to Marketplace | `vsce login <publisher>` |
 | Publish | `vsce publish` |
 
