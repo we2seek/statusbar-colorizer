@@ -34,6 +34,17 @@ export function activate(context: vscode.ExtensionContext): void {
     orchestrator.run(updatedWorkspacePath);
   });
 
+  // Re-apply colors immediately when colorStatusBar or colorTitleBar settings change
+  const configChangeSubscription = vscode.workspace.onDidChangeConfiguration((e) => {
+    if (
+      e.affectsConfiguration('statusbarColorizer.colorStatusBar') ||
+      e.affectsConfiguration('statusbarColorizer.colorTitleBar')
+    ) {
+      const currentWorkspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      orchestrator.run(currentWorkspacePath, { force: true });
+    }
+  });
+
   // Register the reassign command
   const reassignCommand = vscode.commands.registerCommand(
     'statusbarColorizer.reassign',
@@ -60,7 +71,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   // Add subscriptions for cleanup on deactivation
-  context.subscriptions.push(folderChangeSubscription, reassignCommand);
+  context.subscriptions.push(folderChangeSubscription, configChangeSubscription, reassignCommand);
 }
 
 export function deactivate(): void {}

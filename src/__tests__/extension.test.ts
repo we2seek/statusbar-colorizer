@@ -13,6 +13,7 @@ vi.mock('vscode', () => ({
   workspace: {
     workspaceFolders: undefined,
     onDidChangeWorkspaceFolders: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+    onDidChangeConfiguration: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   },
   commands: {
     registerCommand: vi.fn().mockReturnValue({ dispose: vi.fn() }),
@@ -98,6 +99,7 @@ describe('extension — activate()', () => {
     // Reset default return values after clearAllMocks
     getRegisterCommand().mockReturnValue({ dispose: vi.fn() });
     getOnDidChangeWorkspaceFolders().mockReturnValue({ dispose: vi.fn() });
+    vi.mocked(vscode.workspace.onDidChangeConfiguration).mockReturnValue({ dispose: vi.fn() } as unknown as vscode.Disposable);
 
     // Create a fresh mockRun for each test and wire it into the constructor mock
     mockRun = vi.fn().mockResolvedValue({ status: 'skipped', reason: 'no-workspace' });
@@ -254,7 +256,7 @@ describe('extension — activate()', () => {
     const context = createMockContext();
     activate(context);
 
-    // Should have at least 2 subscriptions: folderChangeSubscription + reassignCommand
-    expect(context.subscriptions.length).toBeGreaterThanOrEqual(2);
+    // Should have at least 3 subscriptions: folderChangeSubscription + configChangeSubscription + reassignCommand
+    expect(context.subscriptions.length).toBeGreaterThanOrEqual(3);
   });
 });

@@ -246,11 +246,14 @@ describe('DefaultSettingsFileManager.write()', () => {
       await writeSettingsFile(dir, JSON.stringify(existing));
 
       const manager = new DefaultSettingsFileManager();
+      // titleBar params are omitted → titleBar.activeBackground should be removed
       await manager.write(dir, '#2D6A4F', '#FFFFFF');
 
       const raw = await readSettingsFile(dir);
       const parsed = JSON.parse(raw);
-      expect(parsed['workbench.colorCustomizations']['titleBar.activeBackground']).toBe('#1e1e1e');
+      // titleBar.activeBackground is a managed key — it gets cleared when not passed
+      expect(parsed['workbench.colorCustomizations']).not.toHaveProperty('titleBar.activeBackground');
+      // Unrelated keys must be preserved
       expect(parsed['workbench.colorCustomizations']['activityBar.background']).toBe('#333333');
       expect(parsed['workbench.colorCustomizations']['statusBar.background']).toBe('#2D6A4F');
       expect(parsed['workbench.colorCustomizations']['statusBar.foreground']).toBe('#FFFFFF');

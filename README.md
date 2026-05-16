@@ -59,6 +59,8 @@ Title bar coloring is off by default. To enable it, add this to your user or wor
 "statusbarColorizer.colorTitleBar": true
 ```
 
+The color is applied immediately — no reload needed.
+
 > **macOS / Linux note:** title bar coloring requires VS Code's custom title bar. Add this to your user `settings.json` if the title bar isn't changing color after enabling:
 > ```json
 > "window.titleBarStyle": "custom"
@@ -74,6 +76,8 @@ If you only want the title bar colored and not the status bar, you can turn off 
 ```json
 "statusbarColorizer.colorStatusBar": false
 ```
+
+Changes to this setting take effect immediately. When status bar coloring is disabled, the extension removes the `statusBar.background` and `statusBar.foreground` keys from your workspace's `.vscode/settings.json` automatically — VS Code reverts to its default status bar color.
 
 ---
 
@@ -126,7 +130,7 @@ With `colorTitleBar: true`:
 }
 ```
 
-Existing settings in that file are preserved. If you want to remove the color, just delete the relevant keys from the file.
+Existing settings in that file are preserved. Keys for disabled color targets (e.g. status bar when `colorStatusBar` is `false`, or title bar when `colorTitleBar` is `false`) are automatically removed from the file on the next write — no manual cleanup needed.
 
 ---
 
@@ -135,8 +139,8 @@ Existing settings in that file are preserved. If you want to remove the color, j
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `statusbarColorizer.colorPalette` | `string[]` | `[]` | Custom color palette (`#RRGGBB`). Overrides the built-in palette when non-empty. |
-| `statusbarColorizer.colorStatusBar` | `boolean` | `true` | Apply the project color to the status bar background. |
-| `statusbarColorizer.colorTitleBar` | `boolean` | `false` | Apply the project color to the title bar background. Requires `window.titleBarStyle: custom` on macOS/Linux. |
+| `statusbarColorizer.colorStatusBar` | `boolean` | `true` | Apply the project color to the status bar background. Changes take effect immediately. |
+| `statusbarColorizer.colorTitleBar` | `boolean` | `false` | Apply the project color to the title bar background. Changes take effect immediately. Requires `window.titleBarStyle: custom` on macOS/Linux. |
 
 ---
 

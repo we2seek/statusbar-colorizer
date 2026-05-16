@@ -130,15 +130,23 @@ export class DefaultSettingsFileManager implements SettingsFileManager {
 
     if (statusBarBg !== undefined) {
       colorCustomizations['statusBar.background'] = statusBarBg;
+    } else {
+      delete colorCustomizations['statusBar.background'];
     }
     if (statusBarFg !== undefined) {
       colorCustomizations['statusBar.foreground'] = statusBarFg;
+    } else {
+      delete colorCustomizations['statusBar.foreground'];
     }
     if (titleBarBg !== undefined) {
       colorCustomizations['titleBar.activeBackground'] = titleBarBg;
+    } else {
+      delete colorCustomizations['titleBar.activeBackground'];
     }
     if (titleBarFg !== undefined) {
       colorCustomizations['titleBar.activeForeground'] = titleBarFg;
+    } else {
+      delete colorCustomizations['titleBar.activeForeground'];
     }
 
     settings = { ...settings, 'workbench.colorCustomizations': colorCustomizations };
