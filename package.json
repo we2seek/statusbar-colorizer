@@ -3,7 +3,7 @@
   "publisher": "we2seek",
   "displayName": "Statusbar Colorizer",
   "description": "Automatically assigns a unique status bar color to each workspace",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "license": "MIT",
   "categories": [
     "Other"
@@ -39,7 +39,10 @@
         "statusbarColorizer.colorStrategy": {
           "order": 1,
           "type": "string",
-          "enum": ["project", "branch"],
+          "enum": [
+            "project",
+            "branch"
+          ],
           "default": "project",
           "description": "Color selection strategy: 'project' hashes the workspace folder path; 'branch' uses the current git branch name."
         },

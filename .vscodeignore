@@ -5,6 +5,7 @@ node_modules/**
 out/**/*.js.map
 .gitignore
 .gitkeep
+.env
 tsconfig.json
 vitest.config.ts
 package-lock.json
