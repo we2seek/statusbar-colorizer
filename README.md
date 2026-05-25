@@ -166,7 +166,9 @@ You can override these or add your own entries:
 }
 ```
 
-Any branch not listed in `branchColors` falls back to hashing the branch name against the palette. Branches without a git repo fall back to the `project` strategy automatically.
+Any branch not listed in `branchColors` causes the extension to remove its managed color keys from `.vscode/settings.json`, letting VS Code revert to its default status bar color. This makes it easy to distinguish "known" branches (colored) from feature or personal branches (default color) at a glance.
+
+Branches without a git repo fall back to the `project` strategy automatically.
 
 ---
 

@@ -49,6 +49,7 @@ function buildOrchestrator(overrides?: {
     read: vi.fn().mockResolvedValue(null),
     write: vi.fn().mockResolvedValue(undefined),
     hasStatusBarBackground: vi.fn().mockReturnValue(false),
+    clear: vi.fn().mockResolvedValue({ removed: false }),
     ...overrides?.settingsManager,
   };
 
@@ -549,6 +550,249 @@ describe('Property 12: Orchestrator idempotency in branch mode', () => {
           expect(writeMock).not.toHaveBeenCalled();
         }
       )
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature: branch-color-none-default — Task 4.2: color === null dispatch
+// Unit tests (Validates: Requirements 1.2, 1.3, 1.4, 3.1, 3.2, 3.3)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('ColorAssignmentOrchestrator — branch color === null dispatch', () => {
+  it('"branch" strategy, unnamed branch, no managed keys → { status: "skipped", reason: "already-cleared" }', async () => {
+    const clearMock = vi.fn().mockResolvedValue({ removed: false });
+    const writeMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('feature/unnamed') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+        clear: clearMock,
+      },
+    });
+
+    const result = await orchestrator.run('/some/project');
+
+    expect(result).toEqual({ status: 'skipped', reason: 'already-cleared' });
+    expect(clearMock).toHaveBeenCalledWith('/some/project');
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  it('"branch" strategy, unnamed branch, managed keys present → { status: "cleared" }, clear called, write not called', async () => {
+    const clearMock = vi.fn().mockResolvedValue({ removed: true });
+    const writeMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('feature/unnamed') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue({
+          'workbench.colorCustomizations': { 'statusBar.background': '#1A3A5C' },
+        }),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(true),
+        clear: clearMock,
+      },
+    });
+
+    const result = await orchestrator.run('/some/project');
+
+    expect(result).toEqual({ status: 'cleared' });
+    expect(clearMock).toHaveBeenCalledWith('/some/project');
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  it('"branch" strategy, unnamed branch, force: true, no managed keys → { status: "skipped", reason: "already-cleared" } (force does not bypass already-cleared)', async () => {
+    const clearMock = vi.fn().mockResolvedValue({ removed: false });
+    const writeMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('feature/unnamed') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+        clear: clearMock,
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { force: true });
+
+    expect(result).toEqual({ status: 'skipped', reason: 'already-cleared' });
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  it('"project" strategy → clear never called', async () => {
+    const clearMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('project'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: vi.fn().mockResolvedValue(undefined),
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+        clear: clearMock,
+      },
+    });
+
+    await orchestrator.run('/some/project');
+
+    expect(clearMock).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature: branch-color-none-default, Property 6: already-cleared when no managed keys
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Property 6: Orchestrator clear path — already-cleared when no managed keys present', () => {
+  it('returns already-cleared and neither write nor clear is called when branch is unnamed and no managed keys present (Validates: Requirements 1.3, 3.1, 3.3)', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.string({ minLength: 1 }),
+        fc.boolean(),
+        async (workspacePath, force) => {
+          const clearMock = vi.fn().mockResolvedValue({ removed: false });
+          const writeMock = vi.fn();
+
+          const { orchestrator } = buildOrchestrator({
+            config: {
+              getColorStrategy: vi.fn().mockReturnValue('branch'),
+              getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+              colorStatusBar: vi.fn().mockReturnValue(true),
+              colorTitleBar: vi.fn().mockReturnValue(false),
+              getBranchColors: vi.fn().mockReturnValue({}),
+            },
+            branchDetector: { detect: vi.fn().mockResolvedValue('unnamed-branch') },
+            branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+            settingsManager: {
+              read: vi.fn().mockResolvedValue(null),
+              write: writeMock,
+              hasStatusBarBackground: vi.fn().mockReturnValue(false),
+              clear: clearMock,
+            },
+          });
+
+          const result = await orchestrator.run(workspacePath, { force });
+
+          expect(result).toEqual({ status: 'skipped', reason: 'already-cleared' });
+          expect(writeMock).not.toHaveBeenCalled();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature: branch-color-none-default, Property 7: cleared when managed keys are present
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Property 7: Orchestrator clear path — cleared when managed keys are present', () => {
+  it('returns cleared and write is not called when branch is unnamed and at least one managed key is present (Validates: Requirements 1.2, 1.4, 3.2)', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.string({ minLength: 1 }),
+        async (workspacePath) => {
+          const clearMock = vi.fn().mockResolvedValue({ removed: true });
+          const writeMock = vi.fn();
+
+          const { orchestrator } = buildOrchestrator({
+            config: {
+              getColorStrategy: vi.fn().mockReturnValue('branch'),
+              getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+              colorStatusBar: vi.fn().mockReturnValue(true),
+              colorTitleBar: vi.fn().mockReturnValue(false),
+              getBranchColors: vi.fn().mockReturnValue({}),
+            },
+            branchDetector: { detect: vi.fn().mockResolvedValue('unnamed-branch') },
+            branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+            settingsManager: {
+              read: vi.fn().mockResolvedValue({
+                'workbench.colorCustomizations': { 'statusBar.background': '#1A3A5C' },
+              }),
+              write: writeMock,
+              hasStatusBarBackground: vi.fn().mockReturnValue(true),
+              clear: clearMock,
+            },
+          });
+
+          const result = await orchestrator.run(workspacePath);
+
+          expect(result).toEqual({ status: 'cleared' });
+          expect(writeMock).not.toHaveBeenCalled();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature: branch-color-none-default, Property 8: project strategy never invokes clear path
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Property 8: Project strategy never invokes clear path', () => {
+  it('never calls branchColorResolver.resolve or settingsManager.clear when strategy is "project" (Validates: Requirements 6.1)', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.string({ minLength: 1 }),
+        async (workspacePath) => {
+          const clearMock = vi.fn();
+          const resolveMock = vi.fn();
+
+          const { orchestrator } = buildOrchestrator({
+            config: {
+              getColorStrategy: vi.fn().mockReturnValue('project'),
+              getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+              colorStatusBar: vi.fn().mockReturnValue(true),
+              colorTitleBar: vi.fn().mockReturnValue(false),
+              getBranchColors: vi.fn().mockReturnValue({}),
+            },
+            branchColorResolver: { resolve: resolveMock },
+            settingsManager: {
+              read: vi.fn().mockResolvedValue(null),
+              write: vi.fn().mockResolvedValue(undefined),
+              hasStatusBarBackground: vi.fn().mockReturnValue(false),
+              clear: clearMock,
+            },
+          });
+
+          await orchestrator.run(workspacePath);
+
+          expect(resolveMock).not.toHaveBeenCalled();
+          expect(clearMock).not.toHaveBeenCalled();
+        }
+      ),
+      { numRuns: 100 }
     );
   });
 });

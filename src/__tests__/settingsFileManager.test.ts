@@ -406,3 +406,309 @@ describe('Property 12: Серіалізація — валідний JSON з в�
     }
   );
 });
+
+// ---------------------------------------------------------------------------
+// Unit tests — clear()
+// ---------------------------------------------------------------------------
+
+describe('DefaultSettingsFileManager.clear()', () => {
+  it('returns { removed: false } and creates no file when settings.json does not exist', async () => {
+    await withTempDir(async (dir) => {
+      const manager = new DefaultSettingsFileManager();
+      const result = await manager.clear(dir);
+      expect(result).toEqual({ removed: false });
+
+      // No file should have been created
+      await expect(
+        fs.access(path.join(dir, '.vscode', 'settings.json'))
+      ).rejects.toThrow();
+    });
+  });
+
+  it('returns { removed: false } and leaves file unchanged when no managed keys are present', async () => {
+    await withTempDir(async (dir) => {
+      const initial = {
+        'editor.tabSize': 2,
+        'workbench.colorCustomizations': {
+          'activityBar.background': '#333333',
+        },
+      };
+      await writeSettingsFile(dir, JSON.stringify(initial));
+
+      const manager = new DefaultSettingsFileManager();
+      const result = await manager.clear(dir);
+      expect(result).toEqual({ removed: false });
+
+      const raw = await readSettingsFile(dir);
+      expect(JSON.parse(raw)).toEqual(initial);
+    });
+  });
+
+  it('removes workbench.colorCustomizations entirely when it contains only the four managed keys', async () => {
+    await withTempDir(async (dir) => {
+      const initial = {
+        'workbench.colorCustomizations': {
+          'statusBar.background': '#1A3A5C',
+          'statusBar.foreground': '#FFFFFF',
+          'titleBar.activeBackground': '#1A3A5C',
+          'titleBar.activeForeground': '#FFFFFF',
+        },
+      };
+      await writeSettingsFile(dir, JSON.stringify(initial));
+
+      const manager = new DefaultSettingsFileManager();
+      const result = await manager.clear(dir);
+      expect(result).toEqual({ removed: true });
+
+      const raw = await readSettingsFile(dir);
+      const parsed = JSON.parse(raw);
+      expect(parsed).not.toHaveProperty('workbench.colorCustomizations');
+    });
+  });
+
+  it('removes managed keys but preserves non-extension keys in workbench.colorCustomizations', async () => {
+    await withTempDir(async (dir) => {
+      const initial = {
+        'workbench.colorCustomizations': {
+          'statusBar.background': '#1A3A5C',
+          'statusBar.foreground': '#FFFFFF',
+          'titleBar.activeBackground': '#1A3A5C',
+          'titleBar.activeForeground': '#FFFFFF',
+          'activityBar.background': '#333333',
+        },
+      };
+      await writeSettingsFile(dir, JSON.stringify(initial));
+
+      const manager = new DefaultSettingsFileManager();
+      const result = await manager.clear(dir);
+      expect(result).toEqual({ removed: true });
+
+      const raw = await readSettingsFile(dir);
+      const parsed = JSON.parse(raw);
+      const cc = parsed['workbench.colorCustomizations'];
+      expect(cc).toBeDefined();
+      expect(cc).not.toHaveProperty('statusBar.background');
+      expect(cc).not.toHaveProperty('statusBar.foreground');
+      expect(cc).not.toHaveProperty('titleBar.activeBackground');
+      expect(cc).not.toHaveProperty('titleBar.activeForeground');
+      expect(cc['activityBar.background']).toBe('#333333');
+    });
+  });
+
+  it('calls showError and throws when settings.json contains invalid JSON', async () => {
+    await withTempDir(async (dir) => {
+      await writeSettingsFile(dir, '{ invalid json }');
+      const showError = vi.fn();
+      const manager = new DefaultSettingsFileManager(showError);
+
+      await expect(manager.clear(dir)).rejects.toThrow();
+      // readForWrite() calls showError once for invalid JSON, then clear() calls it again
+      expect(showError).toHaveBeenCalled();
+      expect(showError.mock.calls.some((call: string[]) => call[0].includes('settings.json'))).toBe(true);
+    });
+  });
+
+  it('preserves top-level non-workbench.colorCustomizations fields after clear', async () => {
+    await withTempDir(async (dir) => {
+      const initial = {
+        'editor.tabSize': 4,
+        'editor.formatOnSave': true,
+        'files.autoSave': 'onFocusChange',
+        'workbench.colorCustomizations': {
+          'statusBar.background': '#1A3A5C',
+          'statusBar.foreground': '#FFFFFF',
+        },
+      };
+      await writeSettingsFile(dir, JSON.stringify(initial));
+
+      const manager = new DefaultSettingsFileManager();
+      const result = await manager.clear(dir);
+      expect(result).toEqual({ removed: true });
+
+      const raw = await readSettingsFile(dir);
+      const parsed = JSON.parse(raw);
+      expect(parsed['editor.tabSize']).toBe(4);
+      expect(parsed['editor.formatOnSave']).toBe(true);
+      expect(parsed['files.autoSave']).toBe('onFocusChange');
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Feature: branch-color-none-default, Property 3: Clear removes all four managed keys
+// ---------------------------------------------------------------------------
+
+describe('Property 3: Clear removes all four extension-managed keys', () => {
+  // Arbitrary: pick any non-empty subset of the four managed keys with hex color values
+  const managedKeys = [
+    'statusBar.background',
+    'statusBar.foreground',
+    'titleBar.activeBackground',
+    'titleBar.activeForeground',
+  ] as const;
+
+  const managedSubsetArb = fc
+    .subarray(managedKeys as unknown as string[], { minLength: 1 })
+    .chain((keys) =>
+      fc
+        .array(fc.stringMatching(/^#[0-9A-Fa-f]{6}$/), {
+          minLength: keys.length,
+          maxLength: keys.length,
+        })
+        .map((colors) => Object.fromEntries(keys.map((k, i) => [k, colors[i]])))
+    );
+
+  it(
+    // Feature: branch-color-none-default, Property 3: Clear removes all four extension-managed keys
+    'after clear(), none of the four managed keys are present in workbench.colorCustomizations (Validates: Requirements 2.1, 2.2)',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(managedSubsetArb, async (managedEntries) => {
+          await withTempDir(async (dir) => {
+            const initial = {
+              'workbench.colorCustomizations': managedEntries,
+            };
+            await writeSettingsFile(dir, JSON.stringify(initial));
+
+            const manager = new DefaultSettingsFileManager();
+            await manager.clear(dir);
+
+            // Re-read the file (or check it's gone)
+            let parsed: Record<string, unknown>;
+            try {
+              const raw = await readSettingsFile(dir);
+              parsed = JSON.parse(raw);
+            } catch {
+              // File was removed entirely — that's fine, no managed keys present
+              return;
+            }
+
+            const cc = parsed['workbench.colorCustomizations'] as Record<string, unknown> | undefined;
+            if (cc !== undefined) {
+              for (const k of managedKeys) {
+                expect(cc).not.toHaveProperty(k);
+              }
+            }
+          });
+        }),
+        { numRuns: 50 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Feature: branch-color-none-default, Property 4: Clear preserves non-extension keys
+// ---------------------------------------------------------------------------
+
+describe('Property 4: Clear preserves non-extension keys in workbench.colorCustomizations', () => {
+  const nonExtensionKeyArb = fc
+    .string({ minLength: 1, maxLength: 40 })
+    .filter(
+      (k) =>
+        k !== 'statusBar.background' &&
+        k !== 'statusBar.foreground' &&
+        k !== 'titleBar.activeBackground' &&
+        k !== 'titleBar.activeForeground'
+    );
+
+  const nonExtensionEntriesArb = fc
+    .dictionary(nonExtensionKeyArb, fc.stringMatching(/^#[0-9A-Fa-f]{6}$/), {
+      minKeys: 1,
+      maxKeys: 5,
+    });
+
+  it(
+    // Feature: branch-color-none-default, Property 4: Clear preserves non-extension keys
+    'after clear(), all non-extension keys in workbench.colorCustomizations are preserved (Validates: Requirements 2.3, 2.5)',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          nonExtensionEntriesArb,
+          fc.subarray(
+            ['statusBar.background', 'statusBar.foreground', 'titleBar.activeBackground', 'titleBar.activeForeground'],
+            { minLength: 0 }
+          ),
+          async (nonExtensionEntries, managedKeysToInclude) => {
+            await withTempDir(async (dir) => {
+              const managedEntries = Object.fromEntries(
+                managedKeysToInclude.map((k) => [k, '#AABBCC'])
+              );
+              const initial = {
+                'workbench.colorCustomizations': {
+                  ...managedEntries,
+                  ...nonExtensionEntries,
+                },
+              };
+              await writeSettingsFile(dir, JSON.stringify(initial));
+
+              const manager = new DefaultSettingsFileManager();
+              await manager.clear(dir);
+
+              const raw = await readSettingsFile(dir);
+              const parsed = JSON.parse(raw);
+              const cc = parsed['workbench.colorCustomizations'] as Record<string, unknown>;
+
+              // All non-extension keys must still be present with original values
+              for (const [k, v] of Object.entries(nonExtensionEntries)) {
+                expect(cc).toHaveProperty(k);
+                expect(cc[k]).toBe(v);
+              }
+            });
+          }
+        ),
+        { numRuns: 50 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Feature: branch-color-none-default, Property 5: Clear removes workbench.colorCustomizations when empty
+// ---------------------------------------------------------------------------
+
+describe('Property 5: Clear removes workbench.colorCustomizations when it becomes empty', () => {
+  const managedKeys = [
+    'statusBar.background',
+    'statusBar.foreground',
+    'titleBar.activeBackground',
+    'titleBar.activeForeground',
+  ] as const;
+
+  // Settings where workbench.colorCustomizations contains ONLY managed keys (no others)
+  const onlyManagedArb = fc
+    .subarray(managedKeys as unknown as string[], { minLength: 1 })
+    .chain((keys) =>
+      fc
+        .array(fc.stringMatching(/^#[0-9A-Fa-f]{6}$/), {
+          minLength: keys.length,
+          maxLength: keys.length,
+        })
+        .map((colors) => Object.fromEntries(keys.map((k, i) => [k, colors[i]])))
+    );
+
+  it(
+    // Feature: branch-color-none-default, Property 5: Clear removes workbench.colorCustomizations when it becomes empty
+    'after clear(), workbench.colorCustomizations key is absent when it contained only managed keys (Validates: Requirements 2.4)',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(onlyManagedArb, async (onlyManagedEntries) => {
+          await withTempDir(async (dir) => {
+            const initial = {
+              'workbench.colorCustomizations': onlyManagedEntries,
+            };
+            await writeSettingsFile(dir, JSON.stringify(initial));
+
+            const manager = new DefaultSettingsFileManager();
+            await manager.clear(dir);
+
+            const raw = await readSettingsFile(dir);
+            const parsed = JSON.parse(raw);
+            expect(parsed).not.toHaveProperty('workbench.colorCustomizations');
+          });
+        }),
+        { numRuns: 50 }
+      );
+    }
+  );
+});

@@ -14,8 +14,9 @@ export interface OrchestratorOptions {
 }
 
 export type AssignmentResult =
-  | { status: 'skipped'; reason: 'no-workspace' | 'already-assigned' | 'no-branch' }
+  | { status: 'skipped'; reason: 'no-workspace' | 'already-assigned' | 'no-branch' | 'already-cleared' }
   | { status: 'assigned'; backgroundColor: string; foregroundColor: string }
+  | { status: 'cleared' }
   | { status: 'error'; message: string };
 
 export class ColorAssignmentOrchestrator {
@@ -86,13 +87,24 @@ export class ColorAssignmentOrchestrator {
         const branchColorMap = this.config.getBranchColors();
 
         // Resolve color via BranchColorResolver
-        result = this.branchColorResolver.resolve(
+        const branchResult = this.branchColorResolver.resolve(
           branchName,
           branchColorMap,
           occupiedColors,
           palette,
           options?.offset
         );
+
+        // Null color means unnamed branch — clear extension-managed keys
+        if (branchResult.color === null) {
+          const clearResult = await this.settingsManager.clear(workspacePath);
+          if (!clearResult.removed) {
+            return { status: 'skipped', reason: 'already-cleared' };
+          }
+          return { status: 'cleared' };
+        }
+
+        result = branchResult;
 
         // Idempotency check: compare resolved color against existing statusBar.background
         if (options?.force !== true) {

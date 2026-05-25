@@ -39,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const settingsManager = new DefaultSettingsFileManager();
   const config = new VscodePluginConfiguration();
   const branchDetector = new DefaultBranchDetector();
-  const branchColorResolver = new DefaultBranchColorResolver(assigner);
+  const branchColorResolver = new DefaultBranchColorResolver();
 
   // Create orchestrator
   const orchestrator = new ColorAssignmentOrchestrator(

@@ -4,10 +4,15 @@ import * as vscode from 'vscode';
 
 export type SettingsObject = Record<string, unknown>;
 
+export type ClearResult =
+  | { removed: true }
+  | { removed: false };
+
 export interface SettingsFileManager {
   read(projectPath: string): Promise<SettingsObject | null>;
   write(projectPath: string, statusBarBg?: string, statusBarFg?: string, titleBarBg?: string, titleBarFg?: string): Promise<void>;
   hasStatusBarBackground(settings: SettingsObject | null): boolean;
+  clear(projectPath: string): Promise<ClearResult>;
 }
 
 export class DefaultSettingsFileManager implements SettingsFileManager {
@@ -162,6 +167,73 @@ export class DefaultSettingsFileManager implements SettingsFileManager {
       this.showError(`Failed to write settings file: ${settingsPath}`);
       throw err;
     }
+  }
+
+  /**
+   * Removes the four extension-managed color keys from `workbench.colorCustomizations`
+   * in `.vscode/settings.json`. If `workbench.colorCustomizations` becomes empty,
+   * removes the key entirely. Returns `{ removed: true }` if any key was removed,
+   * `{ removed: false }` if none were present.
+   *
+   * Implemented in task 2.x.
+   */
+  async clear(projectPath: string): Promise<ClearResult> {
+    const settingsPath = path.join(projectPath, '.vscode', 'settings.json');
+
+    const existing = await this.readForWrite(settingsPath);
+    if (existing === null) {
+      this.showError(`Cannot clear settings: invalid JSON in ${settingsPath}`);
+      throw new Error(`Cannot clear settings: invalid JSON in ${settingsPath}`);
+    }
+
+    const managedKeys = [
+      'statusBar.background',
+      'statusBar.foreground',
+      'titleBar.activeBackground',
+      'titleBar.activeForeground',
+    ] as const;
+
+    const existingCustomizations = existing['workbench.colorCustomizations'];
+    if (
+      existingCustomizations === null ||
+      typeof existingCustomizations !== 'object' ||
+      Array.isArray(existingCustomizations)
+    ) {
+      return { removed: false };
+    }
+
+    const colorCustomizations = existingCustomizations as Record<string, unknown>;
+    const hadAny = managedKeys.some(k => Object.prototype.hasOwnProperty.call(colorCustomizations, k));
+    if (!hadAny) {
+      return { removed: false };
+    }
+
+    // Remove managed keys
+    const updated = { ...colorCustomizations };
+    for (const k of managedKeys) {
+      delete updated[k];
+    }
+
+    let settings: SettingsObject;
+    if (Object.keys(updated).length === 0) {
+      // Remove workbench.colorCustomizations entirely
+      const { 'workbench.colorCustomizations': _removed, ...rest } = existing;
+      settings = rest;
+    } else {
+      settings = { ...existing, 'workbench.colorCustomizations': updated };
+    }
+
+    const vscodePath = path.join(projectPath, '.vscode');
+    await fs.mkdir(vscodePath, { recursive: true });
+    const content = JSON.stringify(settings, null, 2);
+    try {
+      await fs.writeFile(settingsPath, content, 'utf-8');
+    } catch (err: unknown) {
+      this.showError(`Failed to write settings file: ${settingsPath}`);
+      throw err;
+    }
+
+    return { removed: true };
   }
 
   /**
