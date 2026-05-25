@@ -32,6 +32,7 @@ The color is assigned once and then left alone — reopening the same workspace 
 - **64-color muted palette** — dimmed, dusty colors spread across the full hue wheel using a golden-angle distribution
 - **Status bar coloring** — enabled by default, can be turned off
 - **Title bar coloring** — opt-in, colors the title bar to match the status bar
+- **Two color strategies** — hash by workspace path (default) or by git branch name
 - **Reassign command** — if you don't like the assigned color, cycle to the next available one
 
 ---
@@ -134,10 +135,47 @@ Existing settings in that file are preserved. Keys for disabled color targets (e
 
 ---
 
+## Color strategy
+
+By default the extension hashes the **workspace folder path** to pick a color — the same workspace always gets the same color regardless of which branch you're on.
+
+You can switch to **branch-based coloring** so the color changes with the current git branch:
+
+```json
+"statusbarColorizer.colorStrategy": "branch"
+```
+
+With the `branch` strategy you can also pin specific branch names to specific colors. Common branches come pre-configured out of the box:
+
+```json
+"statusbarColorizer.branchColors": {
+  "main":    "#1A3A5C",
+  "master":  "#1A3A5C",
+  "develop": "#3A1A5C"
+}
+```
+
+You can override these or add your own entries:
+
+```json
+"statusbarColorizer.branchColors": {
+  "main":    "#1A3A5C",
+  "master":  "#1A3A5C",
+  "develop": "#3A1A5C",
+  "staging": "#6E2F1A"
+}
+```
+
+Any branch not listed in `branchColors` falls back to hashing the branch name against the palette. Branches without a git repo fall back to the `project` strategy automatically.
+
+---
+
 ## Settings reference
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
+| `statusbarColorizer.colorStrategy` | `string` | `"project"` | Color selection strategy. `"project"` hashes the workspace folder path; `"branch"` uses the current git branch name. |
+| `statusbarColorizer.branchColors` | `object` | `{"main":"#1A3A5C","master":"#1A3A5C","develop":"#3A1A5C"}` | Map of branch names to `#RRGGBB` colors. Only used when `colorStrategy` is `"branch"`. |
 | `statusbarColorizer.colorPalette` | `string[]` | `[]` | Custom color palette (`#RRGGBB`). Overrides the built-in palette when non-empty. |
 | `statusbarColorizer.colorStatusBar` | `boolean` | `true` | Apply the project color to the status bar background. Changes take effect immediately. |
 | `statusbarColorizer.colorTitleBar` | `boolean` | `false` | Apply the project color to the title bar background. Changes take effect immediately. Requires `window.titleBarStyle: custom` on macOS/Linux. |

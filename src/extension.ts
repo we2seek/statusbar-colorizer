@@ -5,6 +5,29 @@ import { ContrastCheckerImpl } from './contrastChecker';
 import { DefaultSettingsFileManager } from './settingsFileManager';
 import { VscodePluginConfiguration } from './pluginConfiguration';
 import { ColorAssignmentOrchestrator } from './orchestrator';
+import { DefaultBranchDetector } from './branchDetector';
+import { DefaultBranchColorResolver } from './branchColorResolver';
+
+/**
+ * Registers a file system watcher on `.git/HEAD` for the given workspace folder.
+ * Calls `orchestrator.run(folderPath, { force: true })` whenever the HEAD file
+ * changes or is created (handles git-init-after-activation). The watcher is
+ * pushed into `context.subscriptions` so VS Code disposes it on deactivation.
+ *
+ * Requirement 5.1, 5.3, 5.4
+ */
+function registerHeadWatcher(
+  folderPath: string,
+  orchestrator: ColorAssignmentOrchestrator,
+  context: vscode.ExtensionContext
+): vscode.FileSystemWatcher {
+  const pattern = new vscode.RelativePattern(folderPath, '.git/HEAD');
+  const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+  watcher.onDidChange(() => orchestrator.run(folderPath, { force: true }));
+  watcher.onDidCreate(() => orchestrator.run(folderPath, { force: true }));
+  context.subscriptions.push(watcher);
+  return watcher;
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -15,6 +38,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const contrastChecker = new ContrastCheckerImpl();
   const settingsManager = new DefaultSettingsFileManager();
   const config = new VscodePluginConfiguration();
+  const branchDetector = new DefaultBranchDetector();
+  const branchColorResolver = new DefaultBranchColorResolver(assigner);
 
   // Create orchestrator
   const orchestrator = new ColorAssignmentOrchestrator(
@@ -22,16 +47,41 @@ export function activate(context: vscode.ExtensionContext): void {
     assigner,
     contrastChecker,
     settingsManager,
-    config
+    config,
+    branchDetector,
+    branchColorResolver
   );
 
   // Run on activation (without force — respects idempotency)
   orchestrator.run(workspacePath);
 
-  // Subscribe to workspace folder changes for multi-root scenarios
-  const folderChangeSubscription = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-    const updatedWorkspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    orchestrator.run(updatedWorkspacePath);
+  // Track one watcher per folder path for dynamic lifecycle management (Requirement 5.5)
+  const headWatchers = new Map<string, vscode.FileSystemWatcher>();
+
+  // Register .git/HEAD watchers for each workspace folder (Requirement 5.1)
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    const watcher = registerHeadWatcher(folder.uri.fsPath, orchestrator, context);
+    headWatchers.set(folder.uri.fsPath, watcher);
+  }
+
+  // Subscribe to workspace folder changes for multi-root scenarios (Requirement 5.5)
+  const folderChangeSubscription = vscode.workspace.onDidChangeWorkspaceFolders((event) => {
+    // Register watchers and run orchestrator for newly added folders
+    for (const folder of event.added) {
+      const folderPath = folder.uri.fsPath;
+      const watcher = registerHeadWatcher(folderPath, orchestrator, context);
+      headWatchers.set(folderPath, watcher);
+      orchestrator.run(folderPath);
+    }
+    // Dispose watchers for removed folders
+    for (const folder of event.removed) {
+      const folderPath = folder.uri.fsPath;
+      const watcher = headWatchers.get(folderPath);
+      if (watcher) {
+        watcher.dispose();
+        headWatchers.delete(folderPath);
+      }
+    }
   });
 
   // Re-apply colors immediately when colorStatusBar or colorTitleBar settings change
@@ -51,8 +101,11 @@ export function activate(context: vscode.ExtensionContext): void {
     async () => {
       const currentWorkspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
-      // Increment offset so each reassign picks a different color
-      const key = `reassignOffset:${currentWorkspacePath ?? ''}`;
+      // Detect current branch so the offset counter is per-branch (Requirement 6.1, 6.2)
+      const branchName = await branchDetector.detect(currentWorkspacePath ?? '') ?? '';
+
+      // Increment offset so each reassign picks a different color (Requirement 6.3, 6.4)
+      const key = `reassignOffset:${currentWorkspacePath ?? ''}:${branchName}`;
       const offset = (context.globalState.get<number>(key) ?? 0) + 1;
       await context.globalState.update(key, offset);
 

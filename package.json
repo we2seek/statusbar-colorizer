@@ -36,7 +36,41 @@
     "configuration": {
       "title": "Statusbar Colorizer",
       "properties": {
+        "statusbarColorizer.colorStrategy": {
+          "order": 1,
+          "type": "string",
+          "enum": ["project", "branch"],
+          "default": "project",
+          "description": "Color selection strategy: 'project' hashes the workspace folder path; 'branch' uses the current git branch name."
+        },
+        "statusbarColorizer.colorStatusBar": {
+          "order": 2,
+          "type": "boolean",
+          "description": "Apply the project color to the status bar background.",
+          "default": true
+        },
+        "statusbarColorizer.colorTitleBar": {
+          "order": 3,
+          "type": "boolean",
+          "description": "Also apply the project color to the title bar background. Requires 'window.titleBarStyle': 'custom' on macOS/Linux.",
+          "default": false
+        },
+        "statusbarColorizer.branchColors": {
+          "order": 4,
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "color-hex"
+          },
+          "default": {
+            "main": "#1A3A5C",
+            "master": "#1A3A5C",
+            "develop": "#3A1A5C"
+          },
+          "description": "Map of branch names to #RRGGBB colors. Overrides built-in defaults for matching keys."
+        },
         "statusbarColorizer.colorPalette": {
+          "order": 5,
           "type": "array",
           "items": {
             "type": "string",
@@ -44,16 +78,6 @@
           },
           "description": "Custom color palette (HEX #RRGGBB). Overrides built-in palette.",
           "default": []
-        },
-        "statusbarColorizer.colorStatusBar": {
-          "type": "boolean",
-          "description": "Apply the project color to the status bar background.",
-          "default": true
-        },
-        "statusbarColorizer.colorTitleBar": {
-          "type": "boolean",
-          "description": "Also apply the project color to the title bar background. Requires 'window.titleBarStyle': 'custom' on macOS/Linux.",
-          "default": false
         }
       }
     }

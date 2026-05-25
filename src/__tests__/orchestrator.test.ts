@@ -6,6 +6,8 @@ import type { ColorAssigner } from '../colorAssigner';
 import type { ContrastChecker } from '../contrastChecker';
 import type { SettingsFileManager, SettingsObject } from '../settingsFileManager';
 import type { PluginConfiguration } from '../pluginConfiguration';
+import type { BranchDetector } from '../branchDetector';
+import type { BranchColorResolver } from '../branchColorResolver';
 
 vi.mock('vscode', () => ({
   window: {
@@ -22,6 +24,8 @@ function buildOrchestrator(overrides?: {
   contrastChecker?: Partial<ContrastChecker>;
   settingsManager?: Partial<SettingsFileManager>;
   config?: Partial<PluginConfiguration>;
+  branchDetector?: Partial<BranchDetector>;
+  branchColorResolver?: Partial<BranchColorResolver>;
   showWarning?: (msg: string) => void;
 }) {
   const scanner: NeighborScanner = {
@@ -52,7 +56,19 @@ function buildOrchestrator(overrides?: {
     getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
     colorStatusBar: vi.fn().mockReturnValue(true),
     colorTitleBar: vi.fn().mockReturnValue(false),
+    getColorStrategy: vi.fn().mockReturnValue('project'),
+    getBranchColors: vi.fn().mockReturnValue({}),
     ...overrides?.config,
+  };
+
+  const branchDetector: BranchDetector = {
+    detect: vi.fn().mockResolvedValue(null),
+    ...overrides?.branchDetector,
+  };
+
+  const branchColorResolver: BranchColorResolver = {
+    resolve: vi.fn().mockReturnValue({ color: '#2D6A4F' }),
+    ...overrides?.branchColorResolver,
   };
 
   const showWarning = overrides?.showWarning ?? vi.fn();
@@ -63,10 +79,12 @@ function buildOrchestrator(overrides?: {
     contrastChecker,
     settingsManager,
     config,
+    branchDetector,
+    branchColorResolver,
     showWarning
   );
 
-  return { orchestrator, scanner, assigner, contrastChecker, settingsManager, config, showWarning };
+  return { orchestrator, scanner, assigner, contrastChecker, settingsManager, config, branchDetector, branchColorResolver, showWarning };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -298,5 +316,239 @@ describe('ColorAssignmentOrchestrator — unit tests', () => {
 
     await orchestrator.run('/some/project');
     expect(writeMock).toHaveBeenCalledWith('/some/project', '#2D6A4F', '#FFFFFF', '#2D6A4F', '#FFFFFF');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Task 7.4: Orchestrator strategy dispatch unit tests
+// Validates: Requirements 4.1, 4.2, 4.4, 4.5, 8.2, 8.3, 8.7
+// ─────────────────────────────────────────────────────────────────────────────
+describe('ColorAssignmentOrchestrator — strategy dispatch', () => {
+  // ── "project" strategy ────────────────────────────────────────────────────
+
+  it('"project" strategy: does NOT call branchDetector.detect (Validates: Requirements 8.2, 8.7)', async () => {
+    const { orchestrator, branchDetector } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('project'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+    });
+
+    await orchestrator.run('/some/project');
+
+    expect(branchDetector.detect).not.toHaveBeenCalled();
+  });
+
+  it('"project" strategy: does NOT call branchColorResolver.resolve (Validates: Requirements 8.2, 8.7)', async () => {
+    const { orchestrator, branchColorResolver } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('project'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+    });
+
+    await orchestrator.run('/some/project');
+
+    expect(branchColorResolver.resolve).not.toHaveBeenCalled();
+  });
+
+  it('"project" strategy: calls assigner.assign with workspacePath as first arg (Validates: Requirements 8.2)', async () => {
+    const workspacePath = '/some/project';
+    const { orchestrator, assigner } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('project'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+    });
+
+    await orchestrator.run(workspacePath);
+
+    expect(assigner.assign).toHaveBeenCalled();
+    expect((assigner.assign as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe(workspacePath);
+  });
+
+  // ── "branch" strategy ─────────────────────────────────────────────────────
+
+  it('"branch" strategy: calls branchDetector.detect (Validates: Requirements 4.1, 8.3)', async () => {
+    const workspacePath = '/some/project';
+    const { orchestrator, branchDetector } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: {
+        detect: vi.fn().mockResolvedValue('feature/my-branch'),
+      },
+    });
+
+    await orchestrator.run(workspacePath);
+
+    expect(branchDetector.detect).toHaveBeenCalledWith(workspacePath);
+  });
+
+  it('"branch" strategy: calls branchColorResolver.resolve with branch name and branch color map (Validates: Requirements 4.2, 8.3)', async () => {
+    const branchName = 'feature/my-branch';
+    const branchColorMap = { main: '#1A3A5C', develop: '#3A1A5C' };
+    const { orchestrator, branchColorResolver } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue(branchColorMap),
+      },
+      branchDetector: {
+        detect: vi.fn().mockResolvedValue(branchName),
+      },
+    });
+
+    await orchestrator.run('/some/project');
+
+    expect(branchColorResolver.resolve).toHaveBeenCalled();
+    const resolveCall = (branchColorResolver.resolve as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(resolveCall[0]).toBe(branchName);
+    expect(resolveCall[1]).toBe(branchColorMap);
+  });
+
+  it('"branch" strategy: branchDetector.detect returns null → { status: "skipped", reason: "no-branch" } (Validates: Requirements 2.4)', async () => {
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: {
+        detect: vi.fn().mockResolvedValue(null),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project');
+
+    expect(result).toEqual({ status: 'skipped', reason: 'no-branch' });
+  });
+
+  it('"branch" strategy with force: true skips idempotency check and writes (Validates: Requirements 4.4, 4.5)', async () => {
+    const resolvedColor = '#2D6A4F';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+
+    // Settings already have the resolved color as statusBar.background
+    const existingSettings = {
+      'workbench.colorCustomizations': {
+        'statusBar.background': resolvedColor,
+      },
+    };
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: {
+        detect: vi.fn().mockResolvedValue('feature/my-branch'),
+      },
+      branchColorResolver: {
+        resolve: vi.fn().mockReturnValue({ color: resolvedColor }),
+      },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(existingSettings),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(true),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { force: true });
+
+    expect(writeMock).toHaveBeenCalled();
+    expect(result.status).toBe('assigned');
+  });
+
+  it('"branch" strategy: palette-exhausted warning is shown (Validates: Requirements 7.3, 8.3)', async () => {
+    const showWarning = vi.fn();
+    const exhaustedColor = '#2D6A4F';
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: {
+        detect: vi.fn().mockResolvedValue('feature/my-branch'),
+      },
+      branchColorResolver: {
+        resolve: vi.fn().mockReturnValue({ color: exhaustedColor, warning: 'palette-exhausted' }),
+      },
+      showWarning,
+    });
+
+    await orchestrator.run('/some/project');
+
+    expect(showWarning).toHaveBeenCalledOnce();
+    expect(showWarning).toHaveBeenCalledWith(expect.stringContaining(exhaustedColor));
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature: branch-based-colorization, Property 12: Orchestrator idempotency in branch mode
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Property 12: Orchestrator idempotency in branch mode', () => {
+  it('returns { status: "skipped", reason: "already-assigned" } and does NOT call write when resolved color already matches statusBar.background (Validates: Requirements 4.4)', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.hexaString({ minLength: 6, maxLength: 6 }).map(h => '#' + h.toUpperCase()),
+        async (generatedColor) => {
+          const writeMock = vi.fn().mockResolvedValue(undefined);
+
+          const { orchestrator } = buildOrchestrator({
+            config: {
+              getColorStrategy: vi.fn().mockReturnValue('branch'),
+              getBranchColors: vi.fn().mockReturnValue({}),
+              getColorPalette: vi.fn().mockReturnValue([generatedColor]),
+              colorStatusBar: vi.fn().mockReturnValue(true),
+              colorTitleBar: vi.fn().mockReturnValue(false),
+            },
+            branchDetector: {
+              detect: vi.fn().mockResolvedValue('main'),
+            },
+            branchColorResolver: {
+              resolve: vi.fn().mockReturnValue({ color: generatedColor }),
+            },
+            settingsManager: {
+              read: vi.fn().mockResolvedValue({
+                'workbench.colorCustomizations': {
+                  'statusBar.background': generatedColor,
+                },
+              }),
+              write: writeMock,
+              hasStatusBarBackground: vi.fn().mockReturnValue(true),
+            },
+          });
+
+          const result = await orchestrator.run('/some/project', { force: false });
+
+          expect(result).toEqual({ status: 'skipped', reason: 'already-assigned' });
+          expect(writeMock).not.toHaveBeenCalled();
+        }
+      )
+    );
   });
 });
