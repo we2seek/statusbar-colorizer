@@ -149,9 +149,9 @@ With the `branch` strategy you can also pin specific branch names to specific co
 
 ```json
 "statusbarColorizer.branchColors": {
-  "main":    "#1A3A5C",
-  "master":  "#1A3A5C",
-  "develop": "#3A1A5C"
+  "main":    "#B7B771",
+  "master":  "#B7B771",
+  "develop": "#74A8BE"
 }
 ```
 
@@ -159,10 +159,10 @@ You can override these or add your own entries:
 
 ```json
 "statusbarColorizer.branchColors": {
-  "main":    "#1A3A5C",
-  "master":  "#1A3A5C",
-  "develop": "#3A1A5C",
-  "staging": "#6E2F1A"
+  "main":    "#B7B771",
+  "master":  "#B7B771",
+  "develop": "#74A8BE",
+  "staging": "#74BE8A"
 }
 ```
 
@@ -177,7 +177,7 @@ Branches without a git repo fall back to the `project` strategy automatically.
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `statusbarColorizer.colorStrategy` | `string` | `"project"` | Color selection strategy. `"project"` hashes the workspace folder path; `"branch"` uses the current git branch name. |
-| `statusbarColorizer.branchColors` | `object` | `{"main":"#1A3A5C","master":"#1A3A5C","develop":"#3A1A5C"}` | Map of branch names to `#RRGGBB` colors. Only used when `colorStrategy` is `"branch"`. |
+| `statusbarColorizer.branchColors` | `object` | `{"main":"#B7B771","master":"#B7B771","develop":"#74A8BE"}` | Map of branch names to `#RRGGBB` colors. Only used when `colorStrategy` is `"branch"`. |
 | `statusbarColorizer.colorPalette` | `string[]` | `[]` | Custom color palette (`#RRGGBB`). Overrides the built-in palette when non-empty. |
 | `statusbarColorizer.colorStatusBar` | `boolean` | `true` | Apply the project color to the status bar background. Changes take effect immediately. |
 | `statusbarColorizer.colorTitleBar` | `boolean` | `false` | Apply the project color to the title bar background. Changes take effect immediately. Requires `window.titleBarStyle: custom` on macOS/Linux. |

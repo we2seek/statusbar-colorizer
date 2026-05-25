@@ -66,9 +66,9 @@
             "format": "color-hex"
           },
           "default": {
-            "main": "#1A3A5C",
-            "master": "#1A3A5C",
-            "develop": "#3A1A5C"
+            "main": "#B7B771",
+            "master": "#B7B771",
+            "develop": "#74A8BE"
           },
           "description": "Map of branch names to #RRGGBB colors. Overrides built-in defaults for matching keys."
         },
