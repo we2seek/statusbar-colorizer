@@ -796,3 +796,303 @@ describe('Property 8: Project strategy never invokes clear path', () => {
     );
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature: reassign-branch-strategy-fix — Task 4: Orchestrator tests for new behaviors
+// Validates: Requirements 2.1, 2.3, 2.4, 3.2
+// ─────────────────────────────────────────────────────────────────────────────
+describe('ColorAssignmentOrchestrator — reassign branch strategy fix', () => {
+  // ── Requirement 2.1: named branch + offset > 0 → palette color assigned ──
+
+  it('"branch" strategy, named branch, offset > 0 → branchColorResolver.resolve is called with offset; result is { status: "assigned" } and backgroundColor is the palette color (Validates: Requirements 2.1)', async () => {
+    const paletteColor = '#2D6A4F';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+    const resolveMock = vi.fn().mockReturnValue({ color: paletteColor });
+
+    const { orchestrator, branchColorResolver } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue([paletteColor, '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({ main: '#1A3A5C' }),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('main') },
+      branchColorResolver: { resolve: resolveMock },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 1 });
+
+    // Resolver must be called with the offset value
+    expect(resolveMock).toHaveBeenCalled();
+    const resolveCall = resolveMock.mock.calls[0];
+    expect(resolveCall[4]).toBe(1); // offset is the 5th argument
+
+    // Result must be assigned with the palette color
+    expect(result).toEqual({
+      status: 'assigned',
+      backgroundColor: paletteColor,
+      foregroundColor: expect.any(String),
+    });
+    expect((result as { status: 'assigned'; backgroundColor: string }).backgroundColor).toBe(paletteColor);
+    expect(writeMock).toHaveBeenCalled();
+  });
+
+  // ── Requirement 2.3: unmapped branch + offset > 0 → no-branch-mapping, clear NOT called ──
+
+  it('"branch" strategy, unmapped branch (resolver returns { color: null }), offset > 0 → { status: "skipped", reason: "no-branch-mapping" } and settingsManager.clear is NOT called (Validates: Requirements 2.3)', async () => {
+    const clearMock = vi.fn();
+    const writeMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('feature/unmapped') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+        clear: clearMock,
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 1 });
+
+    expect(result).toEqual({ status: 'skipped', reason: 'no-branch-mapping' });
+    expect(clearMock).not.toHaveBeenCalled();
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  // ── Requirement 3.2: unmapped branch + offset = 0 → existing clear behavior preserved ──
+
+  it('"branch" strategy, unmapped branch (resolver returns { color: null }), offset = 0, managed keys present → settingsManager.clear IS called and result is { status: "cleared" } (Validates: Requirements 3.2)', async () => {
+    const clearMock = vi.fn().mockResolvedValue({ removed: true });
+    const writeMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('feature/unmapped') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue({
+          'workbench.colorCustomizations': { 'statusBar.background': '#1A3A5C' },
+        }),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(true),
+        clear: clearMock,
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 0 });
+
+    expect(clearMock).toHaveBeenCalledWith('/some/project');
+    expect(result).toEqual({ status: 'cleared' });
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  it('"branch" strategy, unmapped branch (resolver returns { color: null }), no offset option, no managed keys → settingsManager.clear IS called and result is { status: "skipped", reason: "already-cleared" } (Validates: Requirements 3.2)', async () => {
+    const clearMock = vi.fn().mockResolvedValue({ removed: false });
+    const writeMock = vi.fn();
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({}),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('feature/unmapped') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: null }) },
+      settingsManager: {
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+        clear: clearMock,
+      },
+    });
+
+    // No offset option — automatic assignment path
+    const result = await orchestrator.run('/some/project');
+
+    expect(clearMock).toHaveBeenCalledWith('/some/project');
+    expect(result).toEqual({ status: 'skipped', reason: 'already-cleared' });
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  // ── Requirement 2.4: cleared settings re-application ──
+
+  it('(req 2.4) "branch" strategy, named branch, offset = 0, settings = null → settingsManager.write IS called and result is { status: "assigned" } (Validates: Requirements 2.4)', async () => {
+    const mappedColor = '#1A3A5C';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({ main: mappedColor }),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('main') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: mappedColor }) },
+      settingsManager: {
+        // settings = null: workbench.colorCustomizations is absent
+        read: vi.fn().mockResolvedValue(null),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 0 });
+
+    // Idempotency check must NOT skip when color is missing (existingBg is undefined)
+    expect(writeMock).toHaveBeenCalled();
+    expect(result.status).toBe('assigned');
+  });
+
+  it('(req 2.4) "branch" strategy, named branch, offset = 0, settings has empty workbench.colorCustomizations → settingsManager.write IS called and result is { status: "assigned" } (Validates: Requirements 2.4)', async () => {
+    const mappedColor = '#1A3A5C';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({ main: mappedColor }),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('main') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: mappedColor }) },
+      settingsManager: {
+        // settings has workbench.colorCustomizations but no statusBar.background
+        read: vi.fn().mockResolvedValue({ 'workbench.colorCustomizations': {} }),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(false),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 0 });
+
+    // existingBg is undefined (key absent) → idempotency check does NOT skip
+    expect(writeMock).toHaveBeenCalled();
+    expect(result.status).toBe('assigned');
+  });
+
+  it('(req 2.4) "branch" strategy, named branch, offset = 0, existingBg === mappedColor → { status: "skipped", reason: "already-assigned" } (idempotency still applies when color is present and matches) (Validates: Requirements 2.4)', async () => {
+    const mappedColor = '#1A3A5C';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({ main: mappedColor }),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('main') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: mappedColor }) },
+      settingsManager: {
+        // existingBg === mappedColor → idempotency check skips
+        read: vi.fn().mockResolvedValue({
+          'workbench.colorCustomizations': { 'statusBar.background': mappedColor },
+        }),
+        write: writeMock,
+        hasStatusBarBackground: vi.fn().mockReturnValue(true),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 0 });
+
+    expect(result).toEqual({ status: 'skipped', reason: 'already-assigned' });
+    expect(writeMock).not.toHaveBeenCalled();
+  });
+
+  // ── Idempotency check is value-based, NOT presence-based in the branch path ──
+
+  it('branch path idempotency is value-based (existingBg === result.color): different existing color → write IS called (Validates: Requirements 2.4, 3.2)', async () => {
+    const mappedColor = '#1A3A5C';
+    const differentColor = '#2D6A4F';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({ main: mappedColor }),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('main') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: mappedColor }) },
+      settingsManager: {
+        // A different color is present — value check fails → write proceeds
+        read: vi.fn().mockResolvedValue({
+          'workbench.colorCustomizations': { 'statusBar.background': differentColor },
+        }),
+        write: writeMock,
+        // hasStatusBarBackground returns true, but branch path must NOT use it for idempotency
+        hasStatusBarBackground: vi.fn().mockReturnValue(true),
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 0 });
+
+    // Branch path must write because existingBg !== mappedColor (value-based check)
+    expect(writeMock).toHaveBeenCalled();
+    expect(result.status).toBe('assigned');
+  });
+
+  it('branch path does NOT use hasStatusBarBackground for idempotency: hasStatusBarBackground=true but existingBg !== resolvedColor → write IS called (Validates: Requirements 2.4, 3.2)', async () => {
+    const resolvedColor = '#1A3A5C';
+    const writeMock = vi.fn().mockResolvedValue(undefined);
+    const hasStatusBarBackgroundMock = vi.fn().mockReturnValue(true);
+
+    const { orchestrator } = buildOrchestrator({
+      config: {
+        getColorStrategy: vi.fn().mockReturnValue('branch'),
+        getColorPalette: vi.fn().mockReturnValue(['#2D6A4F', '#1B4332']),
+        colorStatusBar: vi.fn().mockReturnValue(true),
+        colorTitleBar: vi.fn().mockReturnValue(false),
+        getBranchColors: vi.fn().mockReturnValue({ main: resolvedColor }),
+      },
+      branchDetector: { detect: vi.fn().mockResolvedValue('main') },
+      branchColorResolver: { resolve: vi.fn().mockReturnValue({ color: resolvedColor }) },
+      settingsManager: {
+        // statusBar.background is a DIFFERENT color — presence-based check would skip, value-based would not
+        read: vi.fn().mockResolvedValue({
+          'workbench.colorCustomizations': { 'statusBar.background': '#AABBCC' },
+        }),
+        write: writeMock,
+        hasStatusBarBackground: hasStatusBarBackgroundMock,
+      },
+    });
+
+    const result = await orchestrator.run('/some/project', { offset: 0 });
+
+    // If branch path used hasStatusBarBackground (presence-based), it would skip — but it must NOT
+    expect(writeMock).toHaveBeenCalled();
+    expect(result.status).toBe('assigned');
+    // hasStatusBarBackground should NOT be the deciding factor in the branch path
+    // (it may or may not be called, but the result must be 'assigned' regardless)
+  });
+});

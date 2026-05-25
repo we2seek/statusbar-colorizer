@@ -271,6 +271,49 @@ describe('extension — activate()', () => {
     );
   });
 
+  // ─── Test: showInformationMessage for no-branch-mapping (Requirement 2.3) ───
+  it('calls showInformationMessage when reassign returns status === "skipped" and reason === "no-branch-mapping"', async () => {
+    Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+      value: [{ uri: { fsPath: '/some/project' } }],
+      configurable: true,
+    });
+
+    const context = createMockContext();
+    activate(context);
+
+    const registerCommandCalls = getRegisterCommand().mock.calls;
+    const reassignCall = registerCommandCalls.find(([name]) => name === 'statusbarColorizer.reassign');
+    const commandHandler = reassignCall![1] as () => Promise<void>;
+
+    mockRun.mockResolvedValue({ status: 'skipped', reason: 'no-branch-mapping' });
+
+    await commandHandler();
+
+    expect(getShowInformationMessage()).toHaveBeenCalledWith(
+      'Statusbar Colorizer: Reassign is not available for this branch — no color is mapped for it.'
+    );
+  });
+
+  it('does NOT call showInformationMessage for other skipped reasons (e.g. already-assigned)', async () => {
+    Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+      value: [{ uri: { fsPath: '/some/project' } }],
+      configurable: true,
+    });
+
+    const context = createMockContext();
+    activate(context);
+
+    const registerCommandCalls = getRegisterCommand().mock.calls;
+    const reassignCall = registerCommandCalls.find(([name]) => name === 'statusbarColorizer.reassign');
+    const commandHandler = reassignCall![1] as () => Promise<void>;
+
+    mockRun.mockResolvedValue({ status: 'skipped', reason: 'already-assigned' });
+
+    await commandHandler();
+
+    expect(getShowInformationMessage()).not.toHaveBeenCalled();
+  });
+
   // ─── Test 4: subscriptions receive disposables ───
   it('pushes disposables to context.subscriptions', () => {
     Object.defineProperty(vscode.workspace, 'workspaceFolders', {

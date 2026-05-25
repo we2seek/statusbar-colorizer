@@ -50,6 +50,8 @@ If the assigned color clashes with something or you just want a different one:
 
 Each time you run it, the extension cycles to the next available color in the palette. A notification confirms the new color hex value.
 
+When using the `branch` strategy, Reassign only works on branches that have a color mapping in `branchColors`. Running it on an unmapped branch shows an informational message instead of changing the color — the branch is intentionally left uncolored.
+
 ---
 
 ## Title bar coloring
@@ -167,6 +169,8 @@ You can override these or add your own entries:
 ```
 
 Any branch not listed in `branchColors` causes the extension to remove its managed color keys from `.vscode/settings.json`, letting VS Code revert to its default status bar color. This makes it easy to distinguish "known" branches (colored) from feature or personal branches (default color) at a glance.
+
+Running **Reassign Color** on an unmapped branch has no effect — the extension shows an informational message explaining that no color is mapped for that branch. Reassign only cycles colors for branches that appear in `branchColors`.
 
 Branches without a git repo fall back to the `project` strategy automatically.
 

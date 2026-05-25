@@ -14,7 +14,7 @@ export interface OrchestratorOptions {
 }
 
 export type AssignmentResult =
-  | { status: 'skipped'; reason: 'no-workspace' | 'already-assigned' | 'no-branch' | 'already-cleared' }
+  | { status: 'skipped'; reason: 'no-workspace' | 'already-assigned' | 'no-branch' | 'already-cleared' | 'no-branch-mapping' }
   | { status: 'assigned'; backgroundColor: string; foregroundColor: string }
   | { status: 'cleared' }
   | { status: 'error'; message: string };
@@ -95,8 +95,13 @@ export class ColorAssignmentOrchestrator {
           options?.offset
         );
 
-        // Null color means unnamed branch — clear extension-managed keys
+        // Null color means unnamed branch — handle based on whether this is a reassign
         if (branchResult.color === null) {
+          // When offset > 0 (user-initiated reassign), the branch has no mapping — skip with info
+          if (options?.offset !== undefined && options.offset > 0) {
+            return { status: 'skipped', reason: 'no-branch-mapping' };
+          }
+          // offset = 0 or not provided (automatic assignment) — clear extension-managed keys
           const clearResult = await this.settingsManager.clear(workspacePath);
           if (!clearResult.removed) {
             return { status: 'skipped', reason: 'already-cleared' };

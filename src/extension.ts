@@ -115,6 +115,10 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.showInformationMessage(
           `Statusbar Colorizer: Assigned color ${result.backgroundColor}`
         );
+      } else if (result.status === 'skipped' && result.reason === 'no-branch-mapping') {
+        vscode.window.showInformationMessage(
+          'Statusbar Colorizer: Reassign is not available for this branch — no color is mapped for it.'
+        );
       } else if (result.status === 'error') {
         vscode.window.showErrorMessage(
           `Statusbar Colorizer: ${result.message}`
